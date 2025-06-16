@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import socketService from '../../services/socketService';
 import type { GameRoom } from '../../types/game.types';
 import { RoomTypeSelector } from '../RoomTypeSelector/RoomTypeSelector';
+import { AdSense } from '../AdSense/AdSense';
 import './Lobby.css';
 
 interface LobbyProps {
@@ -137,6 +138,15 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, onPracticeModeStart 
         onPracticeModeStart={onPracticeModeStart}
       />
 
+      {/* 顶部横幅广告 */}
+      <div className="adsense-container">
+        <AdSense 
+          adSlot="1234567890" 
+          adFormat="auto"
+          className="adsense-banner"
+        />
+      </div>
+
       <div className="lobby-actions">
         <button 
           onClick={() => {
@@ -268,6 +278,15 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, onPracticeModeStart 
             })}
           </div>
         )}
+      </div>
+
+      {/* 底部横幅广告 */}
+      <div className="adsense-container">
+        <AdSense 
+          adSlot="0987654321" 
+          adFormat="auto"
+          className="adsense-banner"
+        />
       </div>
     </div>
   );
