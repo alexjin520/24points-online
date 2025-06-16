@@ -6,9 +6,10 @@ import './Lobby.css';
 
 interface LobbyProps {
   onRoomJoined: (room: GameRoom, playerId: string, isReconnection?: boolean) => void;
+  onPracticeModeStart?: () => void;
 }
 
-export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
+export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, onPracticeModeStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [allRooms, setAllRooms] = useState<GameRoom[]>([]);
   const [joinRoomId, setJoinRoomId] = useState('');
@@ -133,6 +134,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
       <RoomTypeSelector
         selectedType={selectedRoomType}
         onSelectType={setSelectedRoomType}
+        onPracticeModeStart={onPracticeModeStart}
       />
 
       <div className="lobby-actions">
@@ -168,6 +170,8 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
             {!playerName.trim() ? '🔒 ' : ''}Join Room
           </button>
         </div>
+
+
       </div>
 
       <div className="all-ongoing-battles">

@@ -59,6 +59,47 @@
   background: radial-gradient(circle, rgba(255, 195, 0, 0.1) 0%, transparent 70%);
 }
 
+.room-type-card.practice::before {
+  background: radial-gradient(circle, rgba(103, 58, 183, 0.1) 0%, transparent 70%);
+}
+
+.room-type-card.practice {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.room-type-card.practice .icon {
+  color: #fff;
+}
+
+.room-type-card.practice .detail-icon {
+  color: #fff;
+}
+
+.room-type-card.practice .feature-tag {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.room-type-card.practice .select-button {
+  border-color: #fff;
+  color: #fff;
+}
+
+.room-type-card.practice .select-button:hover {
+  background: #fff;
+  color: #667eea;
+}
+
+.room-type-card.practice.selected {
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.room-type-card.practice.selected .select-button {
+  background: #fff;
+  color: #667eea;
+}
+
 /* Card Header */
 .card-header {
   display: flex;

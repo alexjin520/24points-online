@@ -6,11 +6,13 @@ import './RoomTypeSelector.css';
 interface RoomTypeSelectorProps {
   onSelectType: (typeId: string) => void;
   selectedType?: string;
+  onPracticeModeStart?: () => void;
 }
 
 export const RoomTypeSelector: React.FC<RoomTypeSelectorProps> = ({ 
   onSelectType, 
-  selectedType = 'classic' 
+  selectedType = 'classic',
+  onPracticeModeStart
 }) => {
   const [roomTypes, setRoomTypes] = useState<RoomTypeInfo[]>([]);
   
@@ -24,6 +26,57 @@ export const RoomTypeSelector: React.FC<RoomTypeSelectorProps> = ({
     <div className="room-type-selector">
       <h2>Choose Game Mode</h2>
       <div className="room-type-grid">
+        {/* Single Player Practice Mode Card */}
+        <div
+          className={`room-type-card practice ${selectedType === 'practice' ? 'selected' : ''}`}
+          onClick={() => onPracticeModeStart && onPracticeModeStart()}
+        >
+          <div className="card-header">
+            <div className="icon-wrapper">
+              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 12l2 2 4-4"/>
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+            </div>
+            <h3>1 Player Mode</h3>
+          </div>
+          
+          <div className="card-content">
+            <p className="description">Practice 24-point calculations independently</p>
+            
+            <div className="mode-details">
+              <div className="detail-item">
+                <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>1 Player</span>
+              </div>
+              
+              <div className="detail-item">
+                <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="9" rx="1"/>
+                  <rect x="14" y="3" width="7" height="9" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <span>4 Cards</span>
+              </div>
+            </div>
+            
+            <div className="features">
+              <span className="feature-tag">Statistics</span>
+              <span className="feature-tag">Hints</span>
+            </div>
+          </div>
+          
+          <div className="card-footer">
+            <button className="select-button">
+              Start Practice
+            </button>
+          </div>
+        </div>
+
         {roomTypes.map(type => (
           <div
             key={type.id}
