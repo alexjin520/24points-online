@@ -1,11 +1,14 @@
+/* Import design system */
+@import './styles/design-system.css';
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-secondary);
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  color-scheme: dark;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -28,25 +31,24 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: var(--color-bg-primary);
+  overflow-x: hidden;
 }
 
 h1 {
-  font-size: 2.5em;
+  font-size: clamp(1.8em, 5vw, 2.5em);
   line-height: 1.1;
 }
 
 h2 {
-  font-size: 1.8em;
+  font-size: clamp(1.4em, 4vw, 1.8em);
   line-height: 1.2;
 }
 
 h3 {
-  font-size: 1.3em;
+  font-size: clamp(1.1em, 3vw, 1.3em);
   line-height: 1.3;
 }
 

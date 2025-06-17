@@ -1,0 +1,210 @@
+{
+  "app": {
+    "title": "24 Points Game",
+    "testMode": "Test Mode",
+    "exitTestMode": "Exit Test Mode",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "connecting": "Connecting to server..."
+    },
+    "gameCounter": "{{count}} games played since server start",
+    "testMenu": {
+      "title": "Select Test Component",
+      "deckSystem": "Deck System Test",
+      "calculator": "Calculator Test",
+      "interactiveTable": "Interactive Table Test",
+      "back": "← Back to Test Menu"
+    },
+    "nav": {
+      "play": "Play",
+      "puzzles": "Puzzles",
+      "learn": "Learn",
+      "leaderboard": "Leaderboard",
+      "signIn": "Sign In",
+      "signUp": "Sign Up"
+    }
+  },
+  "lobby": {
+    "title": "24 Points Arena",
+    "subtitle": "Master the art of 24 points calculation",
+    "ongoingBattles": "🔥 ALL ONGOING BATTLES 🔥",
+    "activeGames": "Active Games",
+    "quickPlay": "Quick Play",
+    "quickPlayDesc": "Create a new game instantly",
+    "joinWithCode": "Join with Code",
+    "joinWithCodeDesc": "Enter a room code to join",
+    "yourName": "Your Name",
+    "roomCode": "Room Code",
+    "createRoom": "Create New Room",
+    "joinRoom": "Join Room",
+    "joinBattle": "JOIN BATTLE",
+    "spectate": "👁️ SPECTATE",
+    "soloPractice": "Solo Practice",
+    "placeholders": {
+      "enterName": "Enter your name to start playing",
+      "roomCode": "Room Code"
+    },
+    "status": {
+      "noBattles": "No battles in progress. Be the first to start one!",
+      "vs": "VS",
+      "waiting": "???",
+      "waitingForFighters": "Waiting for fighters...",
+      "roomCode": "ROOM CODE: {{code}}",
+      "readyToStart": "🎮 Ready to Start",
+      "waitingForPlayers": "⏳ Waiting for Players",
+      "battleInProgress": "⚔️ BATTLE IN PROGRESS",
+      "battleEnded": "🏆 Battle Ended",
+      "reconnectAvailable": "🔄 Reconnect Available"
+    },
+    "errors": {
+      "enterName": "Please enter your name",
+      "enterRoomCode": "Please enter room code",
+      "enterNameToContinue": "Please enter your name to continue"
+    },
+    "tooltips": {
+      "enterNameFirst": "Enter your name first",
+      "enterRoomCode": "Enter room code",
+      "watchBattle": "Watch this battle live!"
+    }
+  },
+  "waitingRoom": {
+    "roomCode": "Room Code: {{code}}",
+    "vs": "VS",
+    "status": {
+      "ready": "Ready",
+      "notReady": "Not Ready",
+      "waitingForOpponent": "Waiting for opponent...",
+      "waiting": "Waiting"
+    },
+    "buttons": {
+      "ready": "Ready",
+      "cancelReady": "Cancel Ready",
+      "leaveRoom": "Leave Room"
+    },
+    "gameStarting": "Game starting in {{seconds}}...",
+    "shareCode": "Share this room code with your friend:"
+  },
+  "gameScreen": {
+    "room": "Room: {{code}}",
+    "round": "Round {{number}}",
+    "spectating": "👁️ Spectating",
+    "status": {
+      "loading": "Loading game...",
+      "waitingForData": "Waiting for game data...",
+      "waitingForPlayers": "Waiting for players...",
+      "findSolution": "Round {{number}} - Find a solution!",
+      "watchingGame": "Round {{number}} - Watching game",
+      "raceToSolve": "Race to solve!",
+      "playerSolving": "Player is solving...",
+      "roundEnded": "Round ended!",
+      "gameOver": "Game Over!"
+    },
+    "buttons": {
+      "leaveGame": "Leave Game",
+      "leaveSpectator": "Leave Spectator Mode"
+    },
+    "hints": {
+      "superMode": "Use any combination of the 8 cards to make 24!"
+    },
+    "console": {
+      "solutionFound": "Solution found!",
+      "submittingSolution": "Submitting solution:",
+      "claimError": "Claim error:",
+      "submitError": "Submit error:"
+    }
+  },
+  "roomTypeSelector": {
+    "title": "Choose Game Mode",
+    "loading": "Loading...",
+    "players": "{{count}} Players",
+    "cards": "{{count}} Cards",
+    "cardsRange": "Cards {{min}}-{{max}}",
+    "features": {
+      "tournaments": "Tournaments",
+      "complexityScoring": "Complexity Scoring",
+      "highCardBonus": "High Card Bonus"
+    },
+    "buttons": {
+      "selected": "Selected",
+      "selectMode": "Select Mode"
+    }
+  },
+  "roundResult": {
+    "solution": "Solution:",
+    "finalResult": "Final Result: {{result}}",
+    "messages": {
+      "foundSolution": "{{winner}} found the solution!",
+      "incorrectSolution": "{{player}}'s solution was incorrect!",
+      "noSolution": "No solution exists for these cards!",
+      "timeOut": "Time ran out!",
+      "roundComplete": "Round complete!"
+    },
+    "labels": {
+      "winner": "Winner:",
+      "cardsGoTo": "Cards go to:",
+      "nextRound": "Next round starts in 5 seconds..."
+    },
+    "continueNow": "Continue Now"
+  },
+  "gameOver": {
+    "spectator": {
+      "wins": "{{player}} WINS!",
+      "backToLobby": "🏠 Back to Lobby"
+    },
+    "victory": "VICTORY!",
+    "defeat": "DEFEAT",
+    "battleReport": "⚔️ Battle Report ⚔️",
+    "speedAnalysis": "⏱️ Speed Analysis",
+    "performanceMetrics": "🎯 Performance Metrics",
+    "cardStatistics": "🃏 Card Statistics",
+    "matchAchievements": "🏅 Match Achievements",
+    "messages": {
+      "opponentDisconnected": "Your opponent disconnected and forfeited the game!",
+      "youDisconnected": "You were disconnected and the game was forfeited.",
+      "victoryMessage": "Outstanding performance! You are the 24 Points Champion!",
+      "defeatMessage": "A valiant effort! Ready for a rematch?"
+    },
+    "labels": {
+      "you": "You",
+      "opponent": "Opponent",
+      "wins": "{{count}} wins",
+      "vs": "VS",
+      "averageTime": "Your Average Time",
+      "opponentAverage": "Opponent Average",
+      "playerAverage": "{{player}}'s Average",
+      "fastestSolve": "Your Fastest Solve",
+      "playerFastestSolve": "Fastest Solve",
+      "firstSolveRate": "First Solve Rate",
+      "solutionAccuracy": "Solution Accuracy",
+      "winRate": "Win Rate",
+      "cardsWon": "Cards Won",
+      "cardsLost": "Cards Lost",
+      "finalDeckSize": "Final Deck Size",
+      "cards": "{{count}} cards",
+      "na": "N/A",
+      "seconds": "{{seconds}}s"
+    },
+    "achievements": {
+      "speedDemon": "⚡ Speed Demon",
+      "sharpshooter": "🎯 Sharpshooter",
+      "quickThinker": "🚀 Quick Thinker",
+      "champion": "👑 Champion"
+    },
+    "backToMainPage": "🏠 Back to Main Page"
+  },
+  "disconnect": {
+    "victoryByForfeit": "Victory by Forfeit!",
+    "opponentDisconnected": "Opponent Disconnected",
+    "messages": {
+      "disconnectedTooLong": "{{opponent}} disconnected for too long. You won automatically!",
+      "leftGame": "{{opponent}} has left the game.",
+      "showingVictory": "Showing victory screen in {{seconds}} seconds...",
+      "returningToLobby": "Returning to lobby in {{seconds}} seconds..."
+    },
+    "buttons": {
+      "viewResults": "View Results Now",
+      "returnToLobby": "Return to Lobby Now"
+    }
+  }
+}
