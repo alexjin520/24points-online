@@ -3,20 +3,14 @@ import { useTranslation } from 'react-i18next';
 import socketService from '../../services/socketService';
 import type { GameRoom } from '../../types/game.types';
 import { RoomTypeSelector } from '../RoomTypeSelector/RoomTypeSelector';
-import { AdSense } from '../AdSense/AdSense';
 import './Lobby.css';
 
 interface LobbyProps {
   onRoomJoined: (room: GameRoom, playerId: string, isReconnection?: boolean) => void;
-  onPracticeModeStart?: () => void;
 }
 
-<<<<<<< HEAD
-export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, onPracticeModeStart }) => {
-=======
 export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   const { t } = useTranslation();
->>>>>>> origin
   const [playerName, setPlayerName] = useState('');
   const [allRooms, setAllRooms] = useState<GameRoom[]>([]);
   const [joinRoomId, setJoinRoomId] = useState('');
@@ -131,68 +125,12 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   return (
     <div className="lobby">
       
-<<<<<<< HEAD
-      <div className={`player-name-section ${!playerName && hasInteracted ? 'required' : ''}`}>
-        <label htmlFor="username-input" className="username-label">
-          <span className="label-text">Your Name</span>
-          <span className="required-indicator">*</span>
-        </label>
-        <input
-          id="username-input"
-          type="text"
-          placeholder="Enter your name to start playing"
-          value={playerName}
-          onChange={(e) => {
-            setPlayerName(e.target.value);
-            if (!hasInteracted) setHasInteracted(true);
-          }}
-          onBlur={() => setHasInteracted(true)}
-          maxLength={20}
-          className={!playerName && hasInteracted ? 'input-error' : ''}
-          autoFocus
-        />
-        {!playerName && hasInteracted && (
-          <span className="error-message">Please enter your name to continue</span>
-        )}
-      </div>
-
-      <RoomTypeSelector
-        selectedType={selectedRoomType}
-        onSelectType={setSelectedRoomType}
-        onPracticeModeStart={onPracticeModeStart}
-      />
-
-      {/* 顶部横幅广告 */}
-      <div className="adsense-container">
-        <AdSense 
-          adSlot="1234567890" 
-          adFormat="auto"
-          className="adsense-banner"
-        />
-      </div>
-
-      <div className="lobby-actions">
-        <button 
-          onClick={() => {
-            setHasInteracted(true);
-            handleCreateRoom();
-          }} 
-          disabled={!playerName.trim() || isCreating}
-          className={`create-room-btn ${!playerName.trim() ? 'disabled-hint' : ''}`}
-          title={!playerName.trim() ? 'Enter your name first' : ''}
-        >
-          {!playerName.trim() ? '🔒 ' : ''}Create New Room
-        </button>
-
-        <div className="join-with-code">
-=======
       {/* Player Setup Section */}
       <div className="player-setup">
         <div className="player-name-section">
           <label htmlFor="username-input" className="player-name-label">
             {t('lobby.yourName')}
           </label>
->>>>>>> origin
           <input
             id="username-input"
             type="text"
@@ -291,8 +229,6 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
             </div>
           </div>
         </div>
-
-
       </div>
 
       {/* Active Games Section */}
@@ -404,15 +340,6 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
             })
           )}
         </div>
-      </div>
-
-      {/* 底部横幅广告 */}
-      <div className="adsense-container">
-        <AdSense 
-          adSlot="0987654321" 
-          adFormat="auto"
-          className="adsense-banner"
-        />
       </div>
     </div>
   );

@@ -263,14 +263,6 @@
   margin-top: var(--space-4);
 }
 
-<<<<<<< HEAD
-
-
-.available-rooms {
-  background-color: #f5f5f5;
-  padding: 1.5rem;
-  border-radius: 12px;
-=======
 .solo-practice-label {
   display: inline-flex;
   align-items: center;
@@ -282,7 +274,6 @@
   transition: all var(--transition-base);
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
->>>>>>> origin
 }
 
 .solo-practice-label:hover {

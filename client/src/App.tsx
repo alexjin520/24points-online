@@ -8,11 +8,7 @@ import { DeckTest } from './components/DeckTest/DeckTest'
 import { CalculatorTest } from './components/CalculatorTest/CalculatorTest'
 import { InteractiveTableTest } from './components/InteractiveTableTest/InteractiveTableTest'
 import { SEOContent } from './components/SEO/SEOContent'
-<<<<<<< HEAD
-import { PracticeMode } from './components/PracticeMode/PracticeMode'
-=======
 import Navigation from './components/Navigation/Navigation'
->>>>>>> origin
 import type { GameRoom } from './types/game.types'
 import { GameState } from './types/game.types'
 import './App.css'
@@ -22,8 +18,7 @@ const AppState = {
   LOBBY: 'lobby',
   WAITING_ROOM: 'waiting_room',
   IN_GAME: 'in_game',
-  TEST_MODE: 'test_mode',
-  PRACTICE_MODE: 'practice_mode'
+  TEST_MODE: 'test_mode'
 } as const;
 
 type AppState = typeof AppState[keyof typeof AppState];
@@ -157,10 +152,7 @@ function App() {
         )}
 
         {appState === AppState.LOBBY && (
-          <Lobby 
-            onRoomJoined={handleRoomJoined} 
-            onPracticeModeStart={() => setAppState(AppState.PRACTICE_MODE)}
-          />
+          <Lobby onRoomJoined={handleRoomJoined} />
         )}
 
         {appState === AppState.WAITING_ROOM && currentRoom && (
@@ -178,12 +170,6 @@ function App() {
             playerId={playerId}
             onLeaveGame={handleLeaveRoom}
             isSpectator={isSpectator}
-          />
-        )}
-
-        {appState === AppState.PRACTICE_MODE && (
-          <PracticeMode 
-            onBackToLobby={() => setAppState(AppState.LOBBY)}
           />
         )}
 
