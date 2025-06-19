@@ -141,9 +141,8 @@ export class RoomManager {
     room.scores[playerId] = 0;
     this.playerToRoom.set(socketId, roomId);
 
-    if (room.players.length === 2) {
-      room.state = GameState.PLAYING;
-    }
+    // Don't change state here - wait for players to be ready
+    // The state will change when the game actually starts
 
     return room;
   }
@@ -332,7 +331,7 @@ export class RoomManager {
     }
   }
 
-  submitSolution(roomId: string, playerId: string, solution: Solution): boolean {
+  async submitSolution(roomId: string, playerId: string, solution: Solution): Promise<boolean> {
     const gameManager = this.gameManagers.get(roomId);
     
     if (!gameManager) {
@@ -340,7 +339,7 @@ export class RoomManager {
     }
 
     try {
-      gameManager.submitSolution(playerId, solution);
+      await gameManager.submitSolution(playerId, solution);
       return true;
     } catch (error) {
       console.error('Failed to submit solution:', error);
@@ -545,10 +544,31 @@ export class RoomManager {
     
     const config = room.roomType ? getRoomTypeConfig(room.roomType) : null;
     
-    return {
+    // If game is active, return full game state
+    if (room.state !== GameState.WAITING) {
+      const gameManager = this.gameManagers.get(roomId);
+      if (gameManager) {
+        const fullState = gameManager.getState();
+        console.log('[RoomManager] getRoomInfo (active game):', {
+          roomId,
+          isSoloPractice: room.isSoloPractice,
+          state: fullState.state,
+          playerCount: fullState.players.length
+        });
+        return {
+          ...fullState,
+          roomType: room.roomType || 'classic',
+          config,
+          isSoloPractice: room.isSoloPractice
+        };
+      }
+    }
+    
+    const roomInfo = {
       id: room.id,
       roomType: room.roomType || 'classic',
       config,
+      isSoloPractice: room.isSoloPractice,
       players: room.players.map(p => ({
         id: p.id,
         name: p.name,
@@ -559,6 +579,15 @@ export class RoomManager {
       state: room.state,
       currentRound: room.currentRound
     };
+    
+    console.log('[RoomManager] getRoomInfo:', {
+      roomId,
+      isSoloPractice: room.isSoloPractice,
+      players: roomInfo.players,
+      state: room.state
+    });
+    
+    return roomInfo;
   }
 
   getRoomConfig(roomType: string): any {

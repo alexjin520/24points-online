@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import socketService from './services/socketService'
+import { authService, type AuthUser } from './services/authService'
 import { Lobby } from './components/Lobby/Lobby'
 import { WaitingRoom } from './components/WaitingRoom/WaitingRoom'
 import { GameScreen } from './components/GameScreen/GameScreen'
@@ -9,8 +10,13 @@ import { GameReport } from './components/GameReport/GameReport'
 import { DeckTest } from './components/DeckTest/DeckTest'
 import { CalculatorTest } from './components/CalculatorTest/CalculatorTest'
 import { InteractiveTableTest } from './components/InteractiveTableTest/InteractiveTableTest'
+import { PuzzleRecordsView } from './components/PuzzleRecordsView/PuzzleRecordsView'
+import { Leaderboard } from './components/Leaderboard/Leaderboard'
 import { SEOContent } from './components/SEO/SEOContent'
+import { DynamicSEO } from './components/SEO/DynamicSEO'
 import Navigation from './components/Navigation/Navigation'
+import PatchNotes from './components/PatchNotes'
+import { puzzleRecordsCache, leaderboardCache } from './services/puzzleRecordsCache'
 import type { GameRoom } from './types/game.types'
 import { GameState } from './types/game.types'
 import './App.css'
@@ -20,7 +26,9 @@ const AppState = {
   LOBBY: 'lobby',
   WAITING_ROOM: 'waiting_room',
   IN_GAME: 'in_game',
-  TEST_MODE: 'test_mode'
+  TEST_MODE: 'test_mode',
+  PUZZLES: 'puzzles',
+  LEADERBOARD: 'leaderboard'
 } as const;
 
 type AppState = typeof AppState[keyof typeof AppState];
@@ -34,8 +42,22 @@ function AppContent() {
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null)
   const [playerId, setPlayerId] = useState<string>('')
   const [testComponent, setTestComponent] = useState<'deck' | 'calculator' | 'interactive' | null>(null)
-  const [gameCount, setGameCount] = useState<number>(0)
+  const [onlineUsers, setOnlineUsers] = useState<number>(0)
   const [isSpectator, setIsSpectator] = useState<boolean>(false)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [showPatchNotes, setShowPatchNotes] = useState<boolean>(false)
+  
+  // Use ref to access current appState in event handlers without causing re-renders
+  const appStateRef = useRef(appState)
+  appStateRef.current = appState
+
+  // Load authenticated user on mount
+  useEffect(() => {
+    const user = authService.getUser()
+    if (user) {
+      setAuthUser(user)
+    }
+  }, [])
 
   // Check if we're on a report page
   const isReportPage = location.pathname.startsWith('/report/')
@@ -72,46 +94,106 @@ function AppContent() {
       return
     }
 
+    console.log('[App] useEffect mounting, connecting to socket...')
+    
+    // Check if user is already authenticated
+    const checkAuth = async () => {
+      const user = await authService.getCurrentUser()
+      if (user) {
+        setAuthUser(user)
+      }
+    }
+    checkAuth()
+    
+    // Connect to socket
     socketService.connect()
     
-    socketService.on('connect', () => {
+    const handleConnect = () => {
       setIsConnected(true)
       setAppState(AppState.LOBBY)
       
-      // Get initial game count
-      socketService.emit('get-game-count', (data: { count: number }) => {
-        setGameCount(data.count)
+      // Get initial online users count
+      socketService.emit('get-online-users', (data: { count: number }) => {
+        setOnlineUsers(data.count)
       })
-    })
+      
+      // Preload puzzle records data in background
+      puzzleRecordsCache.preload('puzzle-records', () => {
+        return new Promise((resolve) => {
+          socketService.emit('get-puzzle-records', (data: { records: any[] }) => {
+            const filtered = data.records.filter(record => record.cards.length === 4);
+            puzzleRecordsCache.set('puzzle-records', filtered);
+            resolve(filtered);
+          });
+        });
+      });
+      
+      // Preload leaderboard data in background
+      leaderboardCache.preload('leaderboard-data', () => {
+        return new Promise((resolve) => {
+          socketService.emit('get-leaderboard-data', (data: any) => {
+            leaderboardCache.set('leaderboard-data', data);
+            resolve(data);
+          });
+        });
+      })
+    }
 
-    socketService.on('disconnect', () => {
+    const handleDisconnect = () => {
       setIsConnected(false)
       setAppState(AppState.CONNECTING)
       setCurrentRoom(null)
       setIsSpectator(false)
-    })
+    }
 
-    // Handle spectator joins separately
-    socketService.on('spectator-joined', (data: { room: GameRoom; playerId: string }) => {
+    const handleSpectatorJoined = (data: { room: GameRoom; playerId: string }) => {
       console.log('App.tsx: spectator-joined event received:', data)
       handleRoomJoined(data.room, data.playerId, false, true)
-    })
+    }
+
+    const handleGameStateUpdated = (gameState: GameRoom) => {
+      console.log('[App] game-state-updated received:', {
+        state: gameState.state,
+        players: gameState.players?.length,
+        isSoloPractice: gameState.isSoloPractice
+      })
+      setCurrentRoom(gameState)
+      
+      // Transition to game screen if in waiting room and game has started
+      if (appStateRef.current === AppState.WAITING_ROOM && gameState.state === GameState.PLAYING) {
+        console.log('[App] Transitioning from waiting room to game')
+        setAppState(AppState.IN_GAME)
+      }
+    }
+
+    // Setup event listeners
+    socketService.on('connect', handleConnect)
+    socketService.on('disconnect', handleDisconnect)
+    socketService.on('spectator-joined', handleSpectatorJoined)
+    socketService.on('game-state-updated', handleGameStateUpdated)
 
     return () => {
-      socketService.off('connect')
-      socketService.off('disconnect')
-      socketService.off('spectator-joined')
-      socketService.disconnect()
+      // Clean up event listeners
+      socketService.off('connect', handleConnect)
+      socketService.off('disconnect', handleDisconnect)
+      socketService.off('spectator-joined', handleSpectatorJoined)
+      socketService.off('game-state-updated', handleGameStateUpdated)
+      
+      // Only disconnect if no other component is using the socket
+      // This prevents disconnection during StrictMode double-render
+      if (socketService.getSocket()?.connected) {
+        console.log('App unmounting but keeping socket connected for potential re-mount')
+      }
     }
   }, [handleRoomJoined, isReportPage, isZhReportPage])
 
-  // Poll for game count updates
+  // Poll for online users updates
   useEffect(() => {
     if (!isConnected) return
 
     const interval = setInterval(() => {
-      socketService.emit('get-game-count', (data: { count: number }) => {
-        setGameCount(data.count)
+      socketService.emit('get-online-users', (data: { count: number }) => {
+        setOnlineUsers(data.count)
       })
     }, 5000) // Update every 5 seconds
 
@@ -131,6 +213,16 @@ function AppContent() {
     setIsSpectator(false)
     setAppState(AppState.LOBBY)
   }
+  
+  const handleAuthSuccess = (user: AuthUser) => {
+    setAuthUser(user)
+  }
+  
+  const handleSignOut = async () => {
+    await authService.logout()
+    setAuthUser(null)
+    handleLeaveRoom()
+  }
 
   // If we're on a report page, render differently
   if (isReportPage || isZhReportPage) {
@@ -149,21 +241,34 @@ function AppContent() {
 
   return (
     <div className="App">
+      <DynamicSEO />
       <Navigation 
-        username={currentRoom?.players.find(p => p.id === playerId)?.name} 
-        onSignOut={handleLeaveRoom}
+        username={authUser?.username || currentRoom?.players.find(p => p.id === playerId)?.name} 
+        onSignOut={authUser ? handleSignOut : handleLeaveRoom}
         onTestModeToggle={() => {
           setAppState(appState === AppState.TEST_MODE ? AppState.LOBBY : AppState.TEST_MODE);
           setTestComponent(null);
         }}
         isTestMode={appState === AppState.TEST_MODE}
+        onAuthSuccess={handleAuthSuccess}
+        onPuzzlesClick={() => setAppState(AppState.PUZZLES)}
+        onPlayClick={() => setAppState(AppState.LOBBY)}
+        onLeaderboardClick={() => setAppState(AppState.LEADERBOARD)}
+        currentView={appState}
       />
       
       {/* Connection status bar */}
       <div className="status-bar">
         <div className="status-bar-content">
           <div className="game-counter">
-            {t('app.gameCounter', { count: gameCount })}
+            {t('app.onlineUsers', { count: onlineUsers })}
+            <button 
+              className="patch-notes-link" 
+              onClick={() => setShowPatchNotes(true)}
+              title={t('app.patchNotes', 'Patch Notes')}
+            >
+              📋 {t('app.patchNotes', 'Patch Notes')}
+            </button>
           </div>
           <div className="connection-status">
             <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
@@ -180,7 +285,7 @@ function AppContent() {
         )}
 
         {appState === AppState.LOBBY && (
-          <Lobby onRoomJoined={handleRoomJoined} />
+          <Lobby onRoomJoined={handleRoomJoined} authUser={authUser} />
         )}
 
         {appState === AppState.WAITING_ROOM && currentRoom && (
@@ -233,11 +338,24 @@ function AppContent() {
             )}
           </div>
         )}
+
+        {appState === AppState.PUZZLES && (
+          <PuzzleRecordsView />
+        )}
+
+        {appState === AppState.LEADERBOARD && (
+          <Leaderboard />
+        )}
       </main>
       
       {/* SEO Content - visible to search engines but can be hidden visually */}
       {appState === AppState.LOBBY && (
         <SEOContent />
+      )}
+      
+      {/* Patch Notes Modal */}
+      {showPatchNotes && (
+        <PatchNotes onClose={() => setShowPatchNotes(false)} />
       )}
     </div>
   )

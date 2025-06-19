@@ -2,16 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import socketService from '../../services/socketService';
 import type { GameRoom } from '../../types/game.types';
+import type { AuthUser } from '../../services/authService';
+import { guestService } from '../../services/guestService';
 import { RoomTypeSelector } from '../RoomTypeSelector/RoomTypeSelector';
 import './Lobby.css';
 
 interface LobbyProps {
   onRoomJoined: (room: GameRoom, playerId: string, isReconnection?: boolean) => void;
+  authUser?: AuthUser | null;
 }
 
-export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
+export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
   const { t } = useTranslation();
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(() => {
+    // Priority: authenticated user > cached guest username > empty
+    if (authUser?.username) {
+      return authUser.username;
+    }
+    return guestService.getGuestUsername() || '';
+  });
   const [allRooms, setAllRooms] = useState<GameRoom[]>([]);
   const [joinRoomId, setJoinRoomId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -19,6 +28,15 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isSoloPractice, setIsSoloPractice] = useState(false);
 
+  useEffect(() => {
+    // If user is authenticated, use their username
+    if (authUser?.username) {
+      setPlayerName(authUser.username);
+      // Clear guest username when authenticated
+      guestService.clearGuestUsername();
+    }
+  }, [authUser]);
+  
   useEffect(() => {
     socketService.on('rooms-list', () => {
       // We don't use rooms-list anymore, just keeping the handler for compatibility
@@ -74,6 +92,10 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
       alert(t('lobby.errors.enterName'));
       return;
     }
+    // Save guest username if not authenticated
+    if (!authUser) {
+      guestService.setGuestUsername(playerName);
+    }
     setIsCreating(true);
     console.log('Creating room with:', { playerName, selectedRoomType, isSoloPractice });
     socketService.createRoom(playerName, selectedRoomType, isSoloPractice);
@@ -83,6 +105,10 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
     if (!playerName.trim()) {
       alert(t('lobby.errors.enterName'));
       return;
+    }
+    // Save guest username if not authenticated
+    if (!authUser) {
+      guestService.setGuestUsername(playerName);
     }
     socketService.emit('join-room', { roomId, playerName });
   };
@@ -95,6 +121,10 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
     if (!joinRoomId.trim()) {
       alert(t('lobby.errors.enterRoomCode'));
       return;
+    }
+    // Save guest username if not authenticated
+    if (!authUser) {
+      guestService.setGuestUsername(playerName);
     }
     socketService.emit('join-room', { roomId: joinRoomId.toUpperCase(), playerName });
   };
@@ -139,12 +169,23 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
             onChange={(e) => {
               setPlayerName(e.target.value);
               if (!hasInteracted) setHasInteracted(true);
+              // Save guest username on change if not authenticated
+              if (!authUser && e.target.value.trim()) {
+                guestService.setGuestUsername(e.target.value.trim());
+              }
             }}
             onBlur={() => setHasInteracted(true)}
             maxLength={20}
             className="player-name-input"
             autoFocus
+            aria-label="Enter your name to play 24 Points (24points) online game"
+            disabled={!!authUser}
           />
+          {!authUser && (
+            <div className="username-hint">
+              💡 {t('lobby.usernameHint')}
+            </div>
+          )}
           {!playerName && hasInteracted && (
             <span className="error-message">{t('lobby.errors.enterNameToContinue')}</span>
           )}
@@ -178,6 +219,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
               }} 
               disabled={!playerName.trim() || isCreating}
               className="quick-play-btn"
+              aria-label="Create a new 24 Points (24points) multiplayer game room"
             >
               <span className="btn-text-full">{isCreating ? t('lobby.creating', 'Creating...') : t('lobby.createRoom')}</span>
               <span className="btn-text-mobile">{isCreating ? '...' : 'Create'}</span>
@@ -214,6 +256,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                 onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
                 maxLength={6}
                 className="code-input"
+                aria-label="Enter 24 Points (24points) game room code"
               />
               <button 
                 onClick={() => {
@@ -222,6 +265,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                 }}
                 disabled={!playerName.trim() || !joinRoomId.trim()}
                 className="join-code-btn"
+                aria-label="Join existing 24 Points (24points) game room with code"
               >
                 <span className="btn-text-full">{t('lobby.joinRoom')}</span>
                 <span className="btn-text-mobile">Join</span>

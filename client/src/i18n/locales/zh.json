@@ -8,17 +8,19 @@
       "disconnected": "已断开",
       "connecting": "正在连接服务器..."
     },
-    "gameCounter": "服务器启动以来已进行 {{count}} 场游戏",
+    "onlineUsers": "{{count}} 人在线",
+    "patchNotes": "更新日志",
     "testMenu": {
       "title": "选择测试组件",
       "deckSystem": "牌组系统测试",
       "calculator": "计算器测试",
       "interactiveTable": "互动桌面测试",
+      "puzzleRecords": "题目记录",
       "back": "← 返回测试菜单"
     },
     "nav": {
       "play": "开始游戏",
-      "puzzles": "谜题",
+      "puzzles": "记录",
       "learn": "学习",
       "leaderboard": "排行榜",
       "signIn": "登录",
@@ -66,7 +68,8 @@
       "enterNameFirst": "请先输入您的名字",
       "enterRoomCode": "输入房间代码",
       "watchBattle": "观看这场对战！"
-    }
+    },
+    "usernameHint": "每次使用相同的用户名，以便在排行榜上跟踪您的记录！"
   },
   "waitingRoom": {
     "roomCode": "房间代码：{{code}}",
@@ -112,6 +115,12 @@
       "submittingSolution": "提交解决方案：",
       "claimError": "认领错误：",
       "submitError": "提交错误："
+    },
+    "puzzleRecords": {
+      "appeared": "出现过 {{count}} 次",
+      "record": "记录：{{username}} 用时 {{time}} 秒",
+      "newRecord": "新纪录！",
+      "firstTime": "首次出现的题目！你将创造新纪录！"
     }
   },
   "gameReport": {
@@ -239,5 +248,91 @@
       "viewResults": "立即查看结果",
       "returnToLobby": "立即返回大厅"
     }
+  },
+  "auth": {
+    "tabs": {
+      "signIn": "登录",
+      "signUp": "注册"
+    },
+    "or": "或",
+    "continueWithGoogle": "使用 Google 继续",
+    "continueAsGuest": "游客身份继续",
+    "signIn": "登录",
+    "signUp": "注册",
+    "email": "邮箱",
+    "emailPlaceholder": "请输入您的邮箱",
+    "password": "密码",
+    "passwordPlaceholder": "请输入您的密码",
+    "rememberMe": "记住我",
+    "forgotPassword": "忘记密码？",
+    "signingIn": "正在登录...",
+    "noAccount": "还没有账号？",
+    "errors": {
+      "emailRequired": "请输入邮箱",
+      "passwordRequired": "请输入密码",
+      "invalidEmail": "请输入有效的邮箱地址",
+      "invalidCredentials": "邮箱或密码错误",
+      "loginFailed": "登录失败，请重试。",
+      "usernameMin": "用户名至少需要3个字符",
+      "usernameMax": "用户名不能超过20个字符",
+      "usernameInvalid": "用户名只能包含字母、数字、- 和 _",
+      "emailInvalid": "请输入有效的邮箱地址",
+      "passwordMin": "密码至少需要6个字符",
+      "passwordMismatch": "两次输入的密码不一致",
+      "termsRequired": "您必须同意条款和条件"
+    },
+    "signIn": {
+      "title": "登录",
+      "email": "邮箱",
+      "emailPlaceholder": "请输入您的邮箱",
+      "password": "密码",
+      "passwordPlaceholder": "请输入您的密码",
+      "rememberMe": "记住我",
+      "forgotPassword": "忘记密码？",
+      "submit": "登录",
+      "signingIn": "正在登录...",
+      "noAccount": "还没有账号？",
+      "signUpLink": "立即注册"
+    },
+    "signUp": {
+      "title": "创建账号",
+      "username": "用户名",
+      "usernamePlaceholder": "选择一个用户名",
+      "email": "邮箱",
+      "emailPlaceholder": "请输入您的邮箱",
+      "password": "密码",
+      "passwordPlaceholder": "创建密码",
+      "confirmPassword": "确认密码",
+      "confirmPasswordPlaceholder": "再次输入密码",
+      "terms": "我同意",
+      "termsLink": "条款和条件",
+      "submit": "创建账号",
+      "creating": "正在创建账号...",
+      "haveAccount": "已有账号？",
+      "signInLink": "立即登录",
+      "errors": {
+        "usernameMin": "用户名至少需要3个字符",
+        "usernameMax": "用户名不能超过20个字符",
+        "usernameInvalid": "用户名只能包含字母、数字、- 和 _",
+        "emailInvalid": "请输入有效的邮箱地址",
+        "passwordMin": "密码至少需要6个字符",
+        "passwordMismatch": "两次输入的密码不一致",
+        "termsRequired": "您必须同意条款和条件"
+      }
+    }
+  },
+  "leaderboard": {
+    "recordHoldings": "记录保持者",
+    "eloRank": "Elo排名（即将推出）",
+    "totalPuzzles": "总题目数：{{count}}",
+    "noRecordsYet": "还没有记录。成为第一个创造记录的人！",
+    "you": "你",
+    "records": "个记录",
+    "loading": "加载中...",
+    "comingSoon": "即将推出",
+    "eloDescription": "Elo排名系统将跟踪您的竞技表现"
+  },
+  "patchNotes": {
+    "title": "更新日志"
   }
 }

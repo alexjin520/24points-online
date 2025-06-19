@@ -9,7 +9,12 @@ function broadcastToSpectators(io: Server, roomId: string, event: string, data: 
 }
 
 export const handleConnection = (io: Server, socket: Socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('New client connected:', socket.id, 'Transport:', socket.conn.transport.name);
+  
+  // Log connection details
+  socket.on('error', (error) => {
+    console.error('Socket error for', socket.id, ':', error);
+  });
   
   // Set io instance in RoomManager if not already set
   roomManager.setIo(io);
@@ -17,6 +22,14 @@ export const handleConnection = (io: Server, socket: Socket) => {
   socket.on('create-room', (data: { playerName: string; roomType?: string; isSoloPractice?: boolean }) => {
     const playerId = `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const roomType = data.roomType || 'classic';
+    
+    console.log('[ConnectionHandler] Creating room:', {
+      playerName: data.playerName,
+      roomType,
+      isSoloPractice: data.isSoloPractice,
+      playerId,
+      socketId: socket.id
+    });
     
     try {
       const room = roomManager.createRoom(playerId, socket.id, data.playerName, roomType, data.isSoloPractice);
@@ -27,21 +40,37 @@ export const handleConnection = (io: Server, socket: Socket) => {
         playerId 
       });
       
+      console.log('[ConnectionHandler] Room created:', {
+        roomId: room.id,
+        players: room.players.length,
+        isSoloPractice: room.isSoloPractice
+      });
+      
       // If solo practice mode, add a bot player immediately
       if (data.isSoloPractice) {
+        console.log('[ConnectionHandler] Adding practice bot to room:', room.id);
         const botId = `bot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         const botSocketId = `bot-socket-${Math.random().toString(36).substring(2, 9)}`;
         const botRoom = roomManager.joinRoom(room.id, botId, botSocketId, 'Practice Bot', false);
         
         if (botRoom) {
+          console.log('[ConnectionHandler] Bot joined successfully:', {
+            roomId: room.id,
+            botId,
+            players: botRoom.players.map(p => ({ id: p.id, name: p.name }))
+          });
+          
           // Notify the room about the bot joining
           io.to(room.id).emit('room-updated', roomManager.getRoomInfo(room.id));
           
           // Auto-ready the bot after a short delay
           setTimeout(() => {
+            console.log('[ConnectionHandler] Auto-readying bot:', botId);
             roomManager.updatePlayerReady(room.id, botId, true);
             io.to(room.id).emit('room-updated', roomManager.getRoomInfo(room.id));
           }, 500);
+        } else {
+          console.error('[ConnectionHandler] Failed to add bot to room:', room.id);
         }
       }
       
@@ -204,7 +233,17 @@ export const handleConnection = (io: Server, socket: Socket) => {
               // Send personalized state to each player
               gameState.players.forEach(player => {
                 const playerState = roomManager.getGameStateForPlayer(room.id, player.id);
-                io.to(player.socketId).emit('game-state-updated', playerState);
+                // Skip bot players (they don't have real socket connections)
+                if (!player.id.startsWith('bot-')) {
+                  console.log('[ConnectionHandler] Sending game-state-updated to player:', player.id);
+                  console.log('[ConnectionHandler] Player state includes:', {
+                    state: playerState.state,
+                    currentRound: playerState.currentRound,
+                    hasPuzzleStats: !!playerState.currentPuzzleStats,
+                    puzzleStats: playerState.currentPuzzleStats
+                  });
+                  io.to(player.socketId).emit('game-state-updated', playerState);
+                }
               });
               
               // Send full game state to spectators
@@ -263,14 +302,14 @@ export const handleConnection = (io: Server, socket: Socket) => {
     }
   });
 
-  socket.on('submit-solution', (data: { solution: Solution }) => {
+  socket.on('submit-solution', async (data: { solution: Solution }) => {
     const room = roomManager.getRoomBySocketId(socket.id);
     if (!room) return;
 
     const player = room.players.find(p => p.socketId === socket.id);
     if (!player) return;
 
-    if (roomManager.submitSolution(room.id, player.id, data.solution)) {
+    if (await roomManager.submitSolution(room.id, player.id, data.solution)) {
       const gameState = roomManager.getGameState(room.id);
       if (!gameState) return;
 
@@ -543,6 +582,132 @@ export const handleConnection = (io: Server, socket: Socket) => {
   socket.on('get-game-count', (callback) => {
     const count = roomManager.getTotalGamesPlayed();
     callback({ count });
+  });
+
+  socket.on('get-online-users', (callback) => {
+    const count = io.engine.clientsCount || 0;
+    callback({ count });
+  });
+
+  socket.on('get-puzzle-records', async (callback) => {
+    try {
+      const { getAllPuzzles } = require('../models/puzzleRepository');
+      const allPuzzles = await getAllPuzzles();
+      
+      // Transform data for client
+      const records = allPuzzles.map(puzzle => {
+        const { solveRecords } = require('../models/puzzleRepository');
+        const records = solveRecords.get(puzzle.puzzleKey) || [];
+        const bestRecord = records[0]; // Already sorted by time
+        
+        return {
+          puzzleKey: puzzle.puzzleKey,
+          cards: puzzle.puzzleKey.split(',').map(Number),
+          occurrenceCount: puzzle.occurrenceCount,
+          bestRecord: bestRecord ? {
+            username: bestRecord.username,
+            solveTimeMs: bestRecord.solveTimeMs,
+            solution: bestRecord.solution
+          } : undefined
+        };
+      });
+      
+      callback({ records });
+    } catch (error) {
+      console.error('Error fetching puzzle records:', error);
+      callback({ records: [] });
+    }
+  });
+
+  socket.on('get-leaderboard-data', async (callback) => {
+    try {
+      const { getAllPuzzles, solveRecords } = require('../models/puzzleRepository');
+      const { supabase, isDatabaseConfigured } = require('../db/supabase');
+      
+      let recordHoldings: { username: string; recordCount: number; rank: number }[] = [];
+      let totalPuzzles = 0;
+      
+      if (isDatabaseConfigured() && supabase) {
+        // Use efficient SQL query for database
+        const { data, error } = await supabase.rpc('get_record_holdings');
+        
+        if (!error && data) {
+          recordHoldings = data.map((entry: any, index: number) => ({
+            username: entry.username,
+            recordCount: entry.record_count,
+            rank: index + 1
+          }));
+        } else {
+          // Fallback query if RPC function doesn't exist
+          const { data: recordsData, error: recordsError } = await supabase
+            .from('solve_records')
+            .select('puzzle_key, username, solve_time_ms')
+            .order('puzzle_key')
+            .order('solve_time_ms');
+          
+          if (!recordsError && recordsData) {
+            // Process to find best record per puzzle
+            const bestRecordsByPuzzle = new Map<string, string>();
+            let currentPuzzle = '';
+            
+            recordsData.forEach(record => {
+              if (record.puzzle_key !== currentPuzzle) {
+                currentPuzzle = record.puzzle_key;
+                bestRecordsByPuzzle.set(record.puzzle_key, record.username);
+              }
+            });
+            
+            // Count records per username
+            const recordCounts = new Map<string, number>();
+            bestRecordsByPuzzle.forEach(username => {
+              recordCounts.set(username, (recordCounts.get(username) || 0) + 1);
+            });
+            
+            // Convert to sorted array
+            recordHoldings = Array.from(recordCounts.entries())
+              .map(([username, count]) => ({ username, recordCount: count, rank: 0 }))
+              .sort((a, b) => b.recordCount - a.recordCount)
+              .map((entry, index) => ({ ...entry, rank: index + 1 }));
+          }
+        }
+        
+        // Get total puzzles count
+        const { count } = await supabase
+          .from('puzzles')
+          .select('*', { count: 'exact', head: true });
+        totalPuzzles = count || 0;
+        
+      } else {
+        // In-memory fallback
+        const allPuzzles = await getAllPuzzles();
+        totalPuzzles = allPuzzles.length;
+        
+        // Count records per username
+        const recordCounts = new Map<string, number>();
+        
+        allPuzzles.forEach(puzzle => {
+          const records = solveRecords.get(puzzle.puzzleKey) || [];
+          if (records.length > 0) {
+            const bestRecord = records[0]; // Already sorted by time
+            recordCounts.set(bestRecord.username, (recordCounts.get(bestRecord.username) || 0) + 1);
+          }
+        });
+        
+        // Convert to sorted array
+        recordHoldings = Array.from(recordCounts.entries())
+          .map(([username, count]) => ({ username, recordCount: count, rank: 0 }))
+          .sort((a, b) => b.recordCount - a.recordCount)
+          .map((entry, index) => ({ ...entry, rank: index + 1 }));
+      }
+      
+      callback({
+        recordHoldings: recordHoldings.slice(0, 100), // Top 100 players
+        totalPuzzles
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboard data:', error);
+      callback({ recordHoldings: [], totalPuzzles: 0 });
+    }
   });
 
 

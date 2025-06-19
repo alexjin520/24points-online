@@ -10,6 +10,7 @@ export interface Player {
   name: string;
   deck: Card[];
   isReady: boolean;
+  points?: number; // For point-based scoring in Extended Range mode
 }
 
 export interface GameRoom {
@@ -31,6 +32,15 @@ export interface GameRoom {
   roomType?: string;
   // Solo practice mode
   isSoloPractice?: boolean;
+  // Puzzle records
+  currentPuzzleStats?: {
+    occurrenceCount: number;
+    bestRecord?: {
+      username: string;
+      timeSeconds: number;
+    } | null;
+  };
+  newRecordSet?: boolean;
 }
 
 export const GameState = {

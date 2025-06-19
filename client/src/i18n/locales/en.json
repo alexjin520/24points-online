@@ -8,17 +8,19 @@
       "disconnected": "Disconnected",
       "connecting": "Connecting to server..."
     },
-    "gameCounter": "{{count}} games played since server start",
+    "onlineUsers": "{{count}} people online",
+    "patchNotes": "Patch Notes",
     "testMenu": {
       "title": "Select Test Component",
       "deckSystem": "Deck System Test",
       "calculator": "Calculator Test",
       "interactiveTable": "Interactive Table Test",
+      "puzzleRecords": "Puzzle Records",
       "back": "← Back to Test Menu"
     },
     "nav": {
       "play": "Play",
-      "puzzles": "Puzzles",
+      "puzzles": "Records",
       "learn": "Learn",
       "leaderboard": "Leaderboard",
       "signIn": "Sign In",
@@ -66,7 +68,8 @@
       "enterNameFirst": "Enter your name first",
       "enterRoomCode": "Enter room code",
       "watchBattle": "Watch this battle live!"
-    }
+    },
+    "usernameHint": "Use the same username each time to track your records on the leaderboard!"
   },
   "waitingRoom": {
     "roomCode": "Room Code: {{code}}",
@@ -112,6 +115,12 @@
       "submittingSolution": "Submitting solution:",
       "claimError": "Claim error:",
       "submitError": "Submit error:"
+    },
+    "puzzleRecords": {
+      "appeared": "Appeared {{count}} times",
+      "record": "Record: {{username}} in {{time}}s",
+      "newRecord": "NEW RECORD!",
+      "firstTime": "First time puzzle! You'll set the record!"
     }
   },
   "gameReport": {
@@ -239,5 +248,91 @@
       "viewResults": "View Results Now",
       "returnToLobby": "Return to Lobby Now"
     }
+  },
+  "auth": {
+    "tabs": {
+      "signIn": "Sign In",
+      "signUp": "Sign Up"
+    },
+    "or": "OR",
+    "continueWithGoogle": "Continue with Google",
+    "continueAsGuest": "Continue as Guest",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "signingIn": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "errors": {
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidCredentials": "Invalid email or password",
+      "loginFailed": "Login failed. Please try again.",
+      "usernameMin": "Username must be at least 3 characters",
+      "usernameMax": "Username must be less than 20 characters",
+      "usernameInvalid": "Username can only contain letters, numbers, - and _",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordMin": "Password must be at least 6 characters",
+      "passwordMismatch": "Passwords do not match",
+      "termsRequired": "You must accept the terms and conditions"
+    },
+    "signIn": {
+      "title": "Sign In",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "signingIn": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up"
+    },
+    "signUp": {
+      "title": "Create Account",
+      "username": "Username",
+      "usernamePlaceholder": "Choose a username",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "terms": "I agree to the",
+      "termsLink": "Terms & Conditions",
+      "submit": "Create Account",
+      "creating": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "errors": {
+        "usernameMin": "Username must be at least 3 characters",
+        "usernameMax": "Username must be less than 20 characters",
+        "usernameInvalid": "Username can only contain letters, numbers, - and _",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordMin": "Password must be at least 6 characters",
+        "passwordMismatch": "Passwords do not match",
+        "termsRequired": "You must accept the terms and conditions"
+      }
+    }
+  },
+  "leaderboard": {
+    "recordHoldings": "Record Holdings",
+    "eloRank": "Elo Rank (Coming Soon)",
+    "totalPuzzles": "Total unique puzzles: {{count}}",
+    "noRecordsYet": "No records yet. Be the first to set a record!",
+    "you": "You",
+    "records": "records",
+    "loading": "Loading...",
+    "comingSoon": "Coming Soon",
+    "eloDescription": "Elo ranking system will track your competitive performance"
+  },
+  "patchNotes": {
+    "title": "Patch Notes"
   }
 }

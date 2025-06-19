@@ -7,6 +7,7 @@ import { BaseGameRules } from './rules/BaseGameRules';
 import { ClassicGameRules } from './rules/ClassicGameRules';
 import { SuperGameRules } from './rules/SuperGameRules';
 import { ExtendedGameRules } from './rules/ExtendedGameRules';
+import { trackPuzzle, recordSolveTime, getPuzzleStats, isNewRecord } from '../models/puzzleRepository';
 
 export interface GameEvent {
   type: 'round_start' | 'player_claim' | 'solution_attempt' | 'round_end' | 'game_over';
@@ -176,7 +177,14 @@ export class GameStateManager {
   /**
    * Start a new round
    */
-  private startNewRound(): void {
+  private async startNewRound(): Promise<void> {
+    console.log(`[GameStateManager] Starting new round:`, {
+      roomId: this.room.id,
+      isSoloPractice: this.room.isSoloPractice,
+      currentRound: this.room.currentRound,
+      players: this.room.players.map(p => ({ id: p.id, name: p.name, deckSize: p.deck.length }))
+    });
+    
     // Check if game should end before starting new round
     const player1 = this.room.players[0];
     const player2 = this.room.players[1];
@@ -244,6 +252,38 @@ export class GameStateManager {
     this.room.centerCards = dealtCards;
     this.room.state = GameState.PLAYING;
     console.log('New round started with cards:', cardValues);
+    
+    // Track puzzle occurrence and get stats
+    try {
+      await trackPuzzle(cardValues);
+    } catch (err) {
+      console.error('Error tracking puzzle:', err);
+    }
+    const puzzleStats = await getPuzzleStats(cardValues);
+    
+    console.log('[GameStateManager] Puzzle stats retrieved:', {
+      cardValues,
+      occurrenceCount: puzzleStats.occurrenceCount,
+      hasBestRecord: !!puzzleStats.bestRecord,
+      bestRecord: puzzleStats.bestRecord ? {
+        username: puzzleStats.bestRecord.username,
+        timeSeconds: puzzleStats.bestRecord.solveTimeMs / 1000
+      } : null
+    });
+    
+    // Store puzzle stats in room for clients to display
+    this.room.currentPuzzleStats = {
+      occurrenceCount: puzzleStats.occurrenceCount,
+      bestRecord: puzzleStats.bestRecord ? {
+        username: puzzleStats.bestRecord.username,
+        timeSeconds: puzzleStats.bestRecord.solveTimeMs / 1000
+      } : null
+    };
+    
+    // Trigger game state update to send puzzle stats to clients
+    if (this.onGameStateChangeCallback) {
+      this.onGameStateChangeCallback();
+    }
   }
 
   /**
@@ -277,7 +317,7 @@ export class GameStateManager {
   /**
    * Submit a solution attempt
    */
-  submitSolution(playerId: string, solution: Solution): void {
+  async submitSolution(playerId: string, solution: Solution): Promise<void> {
     if (this.room.state !== GameState.SOLVING) {
       throw new Error('Not in solving state');
     }
@@ -302,6 +342,7 @@ export class GameStateManager {
     if (isValid) {
       // Player wins
       const otherPlayer = this.room.players.find(p => p.id !== playerId);
+      const winner = this.room.players.find(p => p.id === playerId);
       
       // Track statistics
       if (this.room.roundTimes && this.room.roundTimes[playerId]) {
@@ -310,6 +351,27 @@ export class GameStateManager {
       if (this.room.correctSolutions) {
         this.room.correctSolutions[playerId]++;
       }
+      
+      // Record solve time for puzzle records
+      const solveTimeMs = solveTime * 1000; // Convert to milliseconds
+      const cardValues = this.room.centerCards.map(c => c.value);
+      
+      // Convert operations to readable string format
+      const solutionSteps = solution.operations?.map(op => 
+        `${op.left} ${op.operator} ${op.right} = ${op.result}`
+      ).join(' → ') || '';
+      
+      const wasNewRecord = await isNewRecord(cardValues, solveTimeMs);
+      recordSolveTime(
+        cardValues, 
+        winner?.name || 'Unknown', 
+        solveTimeMs,
+        solutionSteps,
+        playerId
+      ).catch(err => console.error('Error recording solve time:', err));
+      
+      // Store if this was a new record
+      this.room.newRecordSet = wasNewRecord;
       
       this.endRound({
         winnerId: playerId,
@@ -350,13 +412,44 @@ export class GameStateManager {
       const loser = this.room.players.find(p => p.id === result.loserId);
       
       if (winner && loser) {
-        // Loser takes all center cards
         console.log(`[GameStateManager] Round ended - Winner: ${winner.name} (${winner.id}), Loser: ${loser.name} (${loser.id})`);
-        console.log(`[GameStateManager] Before transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length}`);
-        loser.deck.push(...result.cards);
-        // Shuffle the loser's deck to prevent the same cards from appearing repeatedly
-        this.gameRules.shuffleDeck(loser.deck);
-        console.log(`[GameStateManager] After transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length} (added ${result.cards.length} cards)`);
+        
+        // Handle Extended Range mode point-based scoring
+        if (this.config.id === 'extended') {
+          // Update points instead of transferring cards
+          if (loser.points === undefined) loser.points = 0;
+          if (winner.points === undefined) winner.points = 0;
+          
+          if (loser.points > 0) {
+            // Loser has points, so they lose one
+            loser.points--;
+            console.log(`[GameStateManager] Extended mode: ${loser.name} loses 1 point (now ${loser.points})`);
+          } else {
+            // Loser has no points, so winner gains one
+            winner.points++;
+            console.log(`[GameStateManager] Extended mode: ${winner.name} gains 1 point (now ${winner.points})`);
+          }
+          
+          // Return cards to their original owners' decks
+          result.cards.forEach(card => {
+            const owner = this.room.players.find(p => p.id === card.owner);
+            if (owner) {
+              owner.deck.push(card);
+            }
+          });
+          
+          // Shuffle both decks
+          this.room.players.forEach(player => {
+            this.gameRules.shuffleDeck(player.deck);
+          });
+        } else {
+          // Classic/Super mode: transfer cards
+          console.log(`[GameStateManager] Before transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length}`);
+          loser.deck.push(...result.cards);
+          // Shuffle the loser's deck to prevent the same cards from appearing repeatedly
+          this.gameRules.shuffleDeck(loser.deck);
+          console.log(`[GameStateManager] After transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length} (added ${result.cards.length} cards)`);
+        }
         
         // Update scores using game rules scoring
         const timeElapsed = Date.now() - this.roundStartTime;
@@ -387,6 +480,9 @@ export class GameStateManager {
 
     // Clear center cards
     this.room.centerCards = [];
+    
+    // Clear puzzle record flag after round ends
+    this.room.newRecordSet = false;
 
     // Check if we should show replay (only for correct solutions)
     if (result.reason === 'correct_solution' && result.solution && 
@@ -395,10 +491,18 @@ export class GameStateManager {
       this.room.state = GameState.REPLAY;
       this.replaySkipRequests.clear();
       
-      // Set a timeout for replay duration (15 seconds to ensure animations complete)
-      this.replayTimeout = setTimeout(() => {
-        this.endReplay();
-      }, 15000);
+      // In solo practice mode, skip replay immediately
+      if (this.room.isSoloPractice) {
+        console.log('[GameStateManager] Solo practice mode - skipping replay immediately');
+        this.replayTimeout = setTimeout(() => {
+          this.endReplay();
+        }, 100); // Minimal delay to ensure state updates propagate
+      } else {
+        // Set a timeout for replay duration (15 seconds to ensure animations complete)
+        this.replayTimeout = setTimeout(() => {
+          this.endReplay();
+        }, 15000);
+      }
     } else {
       // No replay needed, start next round after a delay
       setTimeout(() => {

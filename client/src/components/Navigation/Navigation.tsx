@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from '../LanguageToggle';
+import { AuthModal } from '../AuthModal';
 import './Navigation.css';
 
 interface NavigationProps {
@@ -8,10 +9,17 @@ interface NavigationProps {
   onSignOut?: () => void;
   onTestModeToggle?: () => void;
   isTestMode?: boolean;
+  onAuthSuccess?: (user: any) => void;
+  onPuzzlesClick?: () => void;
+  onPlayClick?: () => void;
+  onLeaderboardClick?: () => void;
+  currentView?: string;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestModeToggle, isTestMode }) => {
+const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestModeToggle, isTestMode, onAuthSuccess, onPuzzlesClick, onPlayClick, onLeaderboardClick, currentView }) => {
   const { t } = useTranslation();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authDefaultTab, setAuthDefaultTab] = useState<'signin' | 'signup'>('signin');
   return (
     <nav className="navigation">
       <div className="nav-container">
@@ -22,11 +30,17 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
           </a>
           
           <div className="nav-links">
-            <button className="nav-link active">
+            <button 
+              className={`nav-link ${currentView === 'lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
+              onClick={onPlayClick}
+            >
               <span className="nav-link-icon">🎮</span>
               {t('app.nav.play')}
             </button>
-            <button className="nav-link" disabled>
+            <button 
+              className={`nav-link ${currentView === 'puzzles' ? 'active' : ''}`}
+              onClick={onPuzzlesClick}
+            >
               <span className="nav-link-icon">🧩</span>
               {t('app.nav.puzzles')}
             </button>
@@ -34,14 +48,46 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
               <span className="nav-link-icon">📚</span>
               {t('app.nav.learn')}
             </button>
-            <button className="nav-link" disabled>
+            <button 
+              className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
+              onClick={onLeaderboardClick}
+            >
               <span className="nav-link-icon">🏆</span>
               {t('app.nav.leaderboard')}
+            </button>
+          </div>
+          
+          {/* Mobile navigation buttons */}
+          <div className="nav-links-mobile">
+            <button 
+              className={`nav-link ${currentView === 'lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
+              onClick={onPlayClick}
+              title={t('app.nav.play')}
+            >
+              <span className="nav-link-icon">🎮</span>
+            </button>
+            <button 
+              className={`nav-link ${currentView === 'puzzles' ? 'active' : ''}`}
+              onClick={onPuzzlesClick}
+              title={t('app.nav.puzzles')}
+            >
+              <span className="nav-link-icon">🧩</span>
             </button>
           </div>
         </div>
         
         <div className="nav-right">
+          {/* Mobile-only Puzzles/Records button */}
+          {onPuzzlesClick && (
+            <button 
+              className={`nav-link-mobile ${currentView === 'puzzles' ? 'active' : ''}`}
+              onClick={onPuzzlesClick}
+              title={t('app.nav.puzzles')}
+            >
+              🧩
+            </button>
+          )}
+          
           {onTestModeToggle && (
             <button 
               className="test-mode-btn"
@@ -90,8 +136,22 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
             </>
           ) : (
             <div className="nav-auth">
-              <button className="btn btn-secondary" disabled>{t('app.nav.signIn')}</button>
-              <button className="btn btn-primary" disabled>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => {
+                  setAuthDefaultTab('signin');
+                  setShowAuthModal(true);
+                }}
+              >
+                {t('app.nav.signIn')}
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  setAuthDefaultTab('signup');
+                  setShowAuthModal(true);
+                }}
+              >
                 <span className="auth-full">{t('app.nav.signUp')}</span>
                 <span className="auth-mobile">Join</span>
               </button>
@@ -99,6 +159,18 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
           )}
         </div>
       </div>
+      
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={(user) => {
+          if (onAuthSuccess) {
+            onAuthSuccess(user);
+          }
+          setShowAuthModal(false);
+        }}
+        defaultTab={authDefaultTab}
+      />
     </nav>
   );
 };

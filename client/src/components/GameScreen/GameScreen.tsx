@@ -9,6 +9,7 @@ import { CardTransfer } from '../CardTransfer/CardTransfer';
 import { SolutionReplay } from '../SolutionReplay/SolutionReplay';
 import { VictoryCelebration } from '../VictoryCelebration/VictoryCelebration';
 import DisconnectNotification from '../DisconnectNotification/DisconnectNotification';
+import { PuzzleRecords } from '../PuzzleRecords/PuzzleRecords';
 import socketService from '../../services/socketService';
 import type { GameRoom, Solution, Card, Operation } from '../../types/game.types';
 import { GameState } from '../../types/game.types';
@@ -23,7 +24,14 @@ interface GameScreenProps {
 
 export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveGame, isSpectator = false }) => {
   const { t } = useTranslation();
-  console.log('[GameScreen] Component mounted with:', { roomId: room?.id, roomState: room?.state, playerId, isSpectator });
+  console.log('[GameScreen] Component mounted with:', { 
+    roomId: room?.id, 
+    roomState: room?.state, 
+    playerId, 
+    isSpectator,
+    isSoloPractice: room?.isSoloPractice,
+    players: room?.players?.map(p => ({ id: p.id, name: p.name, isReady: p.isReady }))
+  });
   
   const {
     gameState,
@@ -50,6 +58,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
   const [gameOverReason, setGameOverReason] = useState<string | null>(null);
   const [gameOverWinnerId, setGameOverWinnerId] = useState<string | null>(null);
   const [opponentDisconnectedTime, setOpponentDisconnectedTime] = useState<number | null>(null);
+  const [showNewRecord, setShowNewRecord] = useState(false);
 
   // Get current player and opponent
   // For spectators, just show the first player as "current" and second as "opponent"
@@ -59,6 +68,15 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
   const opponent = isSpectator 
     ? gameState?.players?.[1] 
     : gameState?.players.find(p => p.id !== playerId);
+
+  console.log('[GameScreen] Player state:', {
+    gameState: gameState?.state,
+    currentPlayer: currentPlayer ? { id: currentPlayer.id, name: currentPlayer.name } : null,
+    opponent: opponent ? { id: opponent.id, name: opponent.name } : null,
+    centerCards: centerCards?.length,
+    currentRound,
+    isSoloPractice: room?.isSoloPractice
+  });
 
 
 
@@ -167,7 +185,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
       if (data.winnerId && data.loserId && centerCards.length > 0) {
         // Don't transfer immediately if there will be a replay
         const hasReplay = data.solution && data.correct && data.solution.operations && data.solution.operations.length > 0;
-        const transferDelay = hasReplay ? 8000 : 2500; // Longer delay if replay
+        // In solo practice with auto-skip, use minimal delay
+        const transferDelay = hasReplay && !gameState?.isSoloPractice ? 8000 : 2500;
         
         setTimeout(() => {
           const transferTo = data.loserId === playerId ? 'current' : 'opponent';
@@ -260,8 +279,31 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
     };
   }, [playerId]);
 
+  // Handle new record notification
+  useEffect(() => {
+    if (gameState?.newRecordSet && gameState?.state === GameState.ROUND_END) {
+      setShowNewRecord(true);
+      // Clear after 3 seconds
+      const timer = setTimeout(() => {
+        setShowNewRecord(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowNewRecord(false);
+    }
+  }, [gameState?.newRecordSet, gameState?.state]);
+
   // For spectators, we need to wait for game state but not for player matching
   if (!gameState || (!isSpectator && (!currentPlayer || !opponent))) {
+    console.log('[GameScreen] Still loading - missing data:', {
+      hasGameState: !!gameState,
+      hasCurrentPlayer: !!currentPlayer,
+      hasOpponent: !!opponent,
+      isSpectator,
+      roomId: room?.id,
+      isSoloPractice: room?.isSoloPractice,
+      playersInRoom: room?.players?.length
+    });
     return (
       <div className="game-screen loading">
         <h2>{t('gameScreen.status.loading')}</h2>
@@ -302,6 +344,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
             player={opponent} 
             isCurrentPlayer={false}
             isDisconnected={!!opponentDisconnectedTime}
+            roomType={room.roomType}
           />
         )}
       </div>
@@ -310,13 +353,30 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
       <div className="game-board">
         {/* Center Table */}
         <div className="center-area">
+          {/* Puzzle Records */}
+          {(() => {
+            console.log('[GameScreen] Puzzle Records check:', {
+              gameState: gameState?.state,
+              isPlaying: gameState?.state === GameState.PLAYING,
+              hasPuzzleStats: !!gameState?.currentPuzzleStats,
+              puzzleStats: gameState?.currentPuzzleStats
+            });
+            return gameState?.state === GameState.PLAYING && gameState?.currentPuzzleStats && (
+              <PuzzleRecords
+                occurrenceCount={gameState.currentPuzzleStats.occurrenceCount}
+                bestRecord={gameState.currentPuzzleStats.bestRecord}
+                showNewRecord={showNewRecord}
+              />
+            );
+          })()}
+          
           <InteractiveCenterTable 
             cards={centerCards}
             onSolutionFound={handleDirectSolution}
             disabled={isSpectator || gameState?.state !== GameState.PLAYING}
             allowInteraction={!isSpectator && gameState?.state === GameState.PLAYING && centerCards.length > 0}
           />
-          {room.roomType === 'super' && (
+          {gameState?.roomType === 'super' && (
             <div className="super-mode-hint">
               <svg className="hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2v6m0 4v6m0 4v2m0-18a2 2 0 110 4 2 2 0 010-4zm0 8a2 2 0 110 4 2 2 0 010-4z" />
@@ -333,6 +393,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
           <PlayerHand 
             player={currentPlayer} 
             isCurrentPlayer={true}
+            roomType={room.roomType}
           />
         )}
       </div>
@@ -371,7 +432,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
             }, 300);
           }}
           autoPlay={true}
-          speed={1}
+          speed={1.5}
+          autoSkip={gameState?.isSoloPractice}
         />
       )}
 
