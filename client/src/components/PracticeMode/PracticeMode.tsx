@@ -16,6 +16,13 @@ interface GameStats {
   bestStreak: number;
 }
 
+// 游戏模式配置 (注释，仅作为参考)
+// GAME_MODES = {
+//   classic: { isMultiplayer: true, playerCount: 2, ... },
+//   super: { cardCount: 8, scoringSystem: 'complexity', ... },
+//   extended: { cardRange: {min: 1, max: 20}, ... }
+// }
+
 export const PracticeMode: React.FC<PracticeModeProps> = ({ onBackToLobby }) => {
   const [currentCards, setCurrentCards] = useState<CardType[]>([]);
   const [result, setResult] = useState<string>('');
@@ -31,7 +38,8 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBackToLobby }) => 
 
   // 生成新题目
   const generateNewProblem = () => {
-    const cardValues = Calculator.generateSolvableCards();
+    // 为Extended模式使用1-20范围，其他模式使用1-10范围
+    const cardValues = Calculator.generateSolvableCards(1, 20);
     const cards: CardType[] = cardValues.map((value, index) => ({
       value,
       owner: 'player1',

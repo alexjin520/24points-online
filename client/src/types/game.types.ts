@@ -54,3 +54,41 @@ export interface Operation {
   right: number;
   result: number;
 }
+
+// Game Report types for sharing
+export interface GameReport {
+  id: string;
+  gameId: string;
+  createdAt: string;
+  players: {
+    id: string;
+    name: string;
+    finalScore: number;
+    finalCardCount: number;
+  }[];
+  gameStats: {
+    totalRounds: number;
+    roomType?: string;
+    gameOverReason?: string;
+    winnerId?: string;
+  };
+  playerStats: {
+    [playerId: string]: {
+      avgSolveTime: number;
+      fastestSolve: number;
+      firstSolveRate: number;
+      accuracyRate: number;
+      totalCardsWon: number;
+      totalCardsLost: number;
+      roundTimes: number[];
+      firstSolves: number;
+      correctSolutions: number;
+      incorrectAttempts: number;
+    };
+  };
+}
+
+export interface ShareableGameData {
+  report: GameReport;
+  shareUrl: string;
+}

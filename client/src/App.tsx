@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import socketService from './services/socketService'
 import { Lobby } from './components/Lobby/Lobby'
 import { WaitingRoom } from './components/WaitingRoom/WaitingRoom'
 import { GameScreen } from './components/GameScreen/GameScreen'
+import { GameReport } from './components/GameReport/GameReport'
 import { DeckTest } from './components/DeckTest/DeckTest'
 import { CalculatorTest } from './components/CalculatorTest/CalculatorTest'
 import { InteractiveTableTest } from './components/InteractiveTableTest/InteractiveTableTest'
@@ -23,8 +25,10 @@ const AppState = {
 
 type AppState = typeof AppState[keyof typeof AppState];
 
-function App() {
+// Main app component that handles routing
+function AppContent() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [isConnected, setIsConnected] = useState(false)
   const [appState, setAppState] = useState<AppState>(AppState.CONNECTING)
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null)
@@ -32,6 +36,10 @@ function App() {
   const [testComponent, setTestComponent] = useState<'deck' | 'calculator' | 'interactive' | null>(null)
   const [gameCount, setGameCount] = useState<number>(0)
   const [isSpectator, setIsSpectator] = useState<boolean>(false)
+
+  // Check if we're on a report page
+  const isReportPage = location.pathname.startsWith('/report/')
+  const isZhReportPage = location.pathname.startsWith('/zh/report/')
 
   const handleRoomJoined = useCallback((room: GameRoom, playerId: string, isReconnection: boolean = false, isSpectatorJoin: boolean = false) => {
     console.log('[App] handleRoomJoined called:', { roomId: room.id, playerId, isReconnection, isSpectatorJoin })
@@ -59,6 +67,11 @@ function App() {
   }, [])
 
   useEffect(() => {
+    // Don't connect socket if we're on a report page
+    if (isReportPage || isZhReportPage) {
+      return
+    }
+
     socketService.connect()
     
     socketService.on('connect', () => {
@@ -90,7 +103,7 @@ function App() {
       socketService.off('spectator-joined')
       socketService.disconnect()
     }
-  }, [handleRoomJoined])
+  }, [handleRoomJoined, isReportPage, isZhReportPage])
 
   // Poll for game count updates
   useEffect(() => {

@@ -193,15 +193,15 @@ export class Calculator {
     return result;
   }
 
-  static generateSolvableCards(): number[] {
+  static generateSolvableCards(minValue: number = 1, maxValue: number = 10): number[] {
     const maxAttempts = 1000;
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const cards: number[] = [];
       
-      // Generate 4 random cards between 1 and 10
+      // Generate 4 random cards within the specified range
       for (let i = 0; i < 4; i++) {
-        cards.push(Math.floor(Math.random() * 10) + 1);
+        cards.push(Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue);
       }
       
       // Check if this combination has a solution
@@ -210,7 +210,23 @@ export class Calculator {
       }
     }
     
-    // Fallback to a known solvable combination
-    return [6, 6, 6, 6]; // 6 + 6 + 6 + 6 = 24
+    // Fallback to known solvable combinations based on range
+    if (maxValue <= 10) {
+      return [6, 6, 6, 6]; // Classic: 6 + 6 + 6 + 6 = 24
+    } else {
+      return [12, 12, 2, 1]; // Extended: 12 + 12 = 24, 2 * 1 = 2, 24 + 2 - 2 = 24
+    }
+  }
+
+  // 获取第一步提示
+  static getSolutionHint(cards: number[]): string | null {
+    console.log('getSolutionHint called with cards:', cards);
+    
+    if (!cards || cards.length < 4) {
+      return '卡片数量不足，无法给出提示';
+    }
+
+    // 简单返回基本提示，避免复杂的类型检查
+    return `第一步提示：先选择 ${cards[0]} 和 ${cards[1]}，使用运算符 +，得到 ${cards[0] + cards[1]}`;
   }
 }

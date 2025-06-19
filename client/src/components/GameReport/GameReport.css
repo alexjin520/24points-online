@@ -1,0 +1,400 @@
+.game-report {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  background: var(--color-bg-primary);
+  min-height: 100vh;
+}
+
+/* Loading State */
+.game-report.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-border-subtle);
+  border-top: 4px solid var(--color-accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--space-4);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.game-report.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-content {
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.error-content h2 {
+  color: var(--color-error);
+  margin-bottom: var(--space-4);
+}
+
+/* Header */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 2px solid var(--color-border-default);
+}
+
+.report-title h1 {
+  color: var(--color-text-primary);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  margin: 0 0 var(--space-2) 0;
+  font-family: var(--font-primary);
+}
+
+.report-date {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.report-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.share-btn, .back-home-btn, .play-again-btn {
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.share-btn {
+  background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+  color: var(--color-bg-primary);
+}
+
+.share-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.share-icon {
+  font-size: var(--text-lg);
+}
+
+.back-home-btn {
+  background-color: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+}
+
+.back-home-btn:hover {
+  background-color: var(--color-surface-3);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+/* Game Result Section */
+.game-result-section {
+  margin-bottom: var(--space-8);
+  text-align: center;
+}
+
+.game-result-section h2 {
+  color: var(--color-text-primary);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-6);
+}
+
+.winner-announcement {
+  margin-bottom: var(--space-6);
+}
+
+.winner-crown {
+  font-size: 4rem;
+  margin-bottom: var(--space-2);
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.winner-announcement h3 {
+  color: var(--color-accent-gold);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  margin: 0;
+}
+
+.final-score {
+  background: var(--color-surface-1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  border: 2px solid var(--color-border-default);
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.player-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.player-score.winner .player-name {
+  color: var(--color-accent-primary);
+}
+
+.player-score.loser .player-name {
+  color: var(--color-text-muted);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.player-name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+.score-value {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text-primary);
+}
+
+.score-separator {
+  font-size: var(--text-2xl);
+  color: var(--color-text-muted);
+  font-weight: var(--font-bold);
+}
+
+/* Statistics Sections */
+.game-stats-section, .player-performance-section {
+  margin-bottom: var(--space-8);
+}
+
+.game-stats-section h2, .player-performance-section h2 {
+  color: var(--color-text-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-4);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.stat-item {
+  background: var(--color-surface-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stat-value {
+  font-weight: var(--font-bold);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+}
+
+.stat-value.success {
+  color: var(--color-success);
+}
+
+.stat-value.danger {
+  color: var(--color-error);
+}
+
+/* Player Performance */
+.player-performance {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.player-performance .player-name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.winner-badge {
+  font-size: var(--text-xl);
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-6);
+}
+
+.performance-category {
+  background: var(--color-surface-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.performance-category h4 {
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  margin: 0 0 var(--space-3) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-row .stat-label {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stat-row .stat-value {
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+/* Play Again Section */
+.play-again-section {
+  background: linear-gradient(135deg, var(--color-surface-1), var(--color-surface-2));
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  text-align: center;
+  border: 2px solid var(--color-border-default);
+}
+
+.play-again-section h3 {
+  color: var(--color-text-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.play-again-section p {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  font-size: var(--text-base);
+}
+
+.play-again-btn {
+  background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+  color: var(--color-bg-primary);
+  font-size: var(--text-lg);
+  padding: var(--space-4) var(--space-8);
+}
+
+.play-again-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .game-report {
+    padding: var(--space-4);
+  }
+
+  .report-header {
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: center;
+    text-align: center;
+  }
+
+  .report-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .share-btn, .back-home-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .score-display {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .score-separator {
+    transform: rotate(90deg);
+  }
+
+  .performance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+} 
