@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GameRoom } from '../../types/game.types';
+import type { GameRoom, ShareableGameData } from '../../types/game.types';
+import { GameReportService } from '../../services/gameReportService';
 import './GameOverEnhanced.css';
 
 interface GameOverEnhancedProps {
@@ -38,6 +39,8 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [shareData, setShareData] = useState<ShareableGameData | null>(null);
+  const [sharing, setSharing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // For spectators, determine the winner and show their stats
@@ -229,6 +232,57 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
     return t('gameOver.labels.seconds', { seconds });
   };
 
+  // Generate and share game report
+  const handleShareGameReport = async () => {
+    if (sharing || shareData) return;
+    
+    setSharing(true);
+    try {
+      // Generate the game report
+      const report = GameReportService.generateGameReport(
+        gameState,
+        gameOverWinnerId || undefined,
+        gameOverReason || undefined
+      );
+      
+      // Save and get shareable data
+      const shareableData = GameReportService.saveAndShareReport(report);
+      setShareData(shareableData);
+      
+      // Share the URL
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: t('gameReport.shareTitle'),
+            text: t('gameReport.shareText', { 
+              player1: gameState.players[0]?.name || 'Player 1',
+              player2: gameState.players[1]?.name || 'Player 2'
+            }),
+            url: shareableData.shareUrl
+          });
+        } catch (err) {
+          // User cancelled share or fallback to clipboard
+          await navigator.clipboard.writeText(shareableData.shareUrl);
+          alert(t('gameReport.linkCopied'));
+        }
+      } else {
+        // Fallback to clipboard
+        try {
+          await navigator.clipboard.writeText(shareableData.shareUrl);
+          alert(t('gameReport.linkCopied'));
+        } catch (err) {
+          // Final fallback - show the URL in a prompt
+          prompt(t('gameReport.copyLink'), shareableData.shareUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error sharing game report:', error);
+      alert(t('gameReport.shareError'));
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <div className={`game-over-enhanced ${isVisible ? 'visible' : ''}`}>
       {isWinner && <canvas ref={canvasRef} className="fireworks-canvas" />}
@@ -392,6 +446,17 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
 
         {/* Action Buttons */}
         <div className="action-buttons">
+          <button 
+            className="action-button share-btn"
+            onClick={handleShareGameReport}
+            disabled={sharing}
+          >
+            <span className="button-icon" role="img" aria-label="Share">
+              {sharing ? '⏳' : '🔗'}
+            </span>
+            {sharing ? t('gameReport.generating') : t('gameReport.shareGameReport')}
+          </button>
+          
           <button 
             className="action-button home-btn"
             onClick={onLeaveGame}

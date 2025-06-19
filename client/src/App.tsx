@@ -132,6 +132,21 @@ function AppContent() {
     setAppState(AppState.LOBBY)
   }
 
+  // If we're on a report page, render differently
+  if (isReportPage || isZhReportPage) {
+    return (
+      <div className="App">
+        <Navigation 
+          onSignOut={() => {}} 
+          isTestMode={false}
+        />
+        <main className="app-main">
+          <GameReport />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="App">
       <Navigation 
@@ -225,6 +240,19 @@ function AppContent() {
         <SEOContent />
       )}
     </div>
+  )
+}
+
+// Wrapper component with Router
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/report/:reportId" element={<AppContent />} />
+        <Route path="/zh/report/:reportId" element={<AppContent />} />
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
+    </Router>
   )
 }
 

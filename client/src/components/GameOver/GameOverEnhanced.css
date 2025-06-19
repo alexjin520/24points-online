@@ -481,6 +481,23 @@
   box-shadow: 0 6px 30px rgba(78, 205, 196, 0.6);
 }
 
+.share-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+.share-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 30px rgba(16, 185, 129, 0.6);
+}
+
+.share-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+}
+
 .home-btn {
   background: linear-gradient(135deg, #667eea, #764ba2);
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
