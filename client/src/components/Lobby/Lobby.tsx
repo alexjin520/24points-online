@@ -10,9 +10,10 @@ import './Lobby.css';
 interface LobbyProps {
   onRoomJoined: (room: GameRoom, playerId: string, isReconnection?: boolean) => void;
   authUser?: AuthUser | null;
+  onRankedClick?: () => void;
 }
 
-export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
+export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser, onRankedClick }) => {
   const { t } = useTranslation();
   const [playerName, setPlayerName] = useState(() => {
     // Priority: authenticated user > cached guest username > empty
@@ -72,6 +73,11 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
       alert(data.message);
     });
 
+    socketService.on('room-creation-error', (data: { message: string }) => {
+      setIsCreating(false);
+      alert(data.message);
+    });
+
     socketService.emit('get-rooms');
     socketService.emit('get-all-rooms');
 
@@ -83,6 +89,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
       socketService.off('room-joined');
       socketService.off('reconnected-to-game');
       socketService.off('join-room-error');
+      socketService.off('room-creation-error');
     };
   }, [onRoomJoined]);
 
@@ -201,6 +208,27 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
 
         {/* Game Options */}
         <div className="game-options">
+          {/* Ranked Matchmaking */}
+          <div className="game-option-card ranked-option">
+            <div className="option-icon">🎯</div>
+            <h3 className="option-title">
+              <span className="title-full">{t('lobby.rankedPlay', 'Ranked Play')}</span>
+              <span className="title-mobile">Ranked</span>
+            </h3>
+            <p className="option-description">
+              <span className="desc-full">{t('lobby.rankedPlayDesc', 'Compete in ranked matches')}</span>
+              <span className="desc-mobile">Compete</span>
+            </p>
+            <button 
+              onClick={onRankedClick}
+              className="ranked-play-btn"
+              aria-label="Play ranked 24 Points matches"
+            >
+              <span className="btn-text-full">{t('lobby.findMatch', 'Find Match')}</span>
+              <span className="btn-text-mobile">Play</span>
+            </button>
+          </div>
+
           {/* Quick Play */}
           <div className="game-option-card">
             <div className="option-icon">⚡</div>
@@ -300,7 +328,17 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
               const gameStatus = getGameStatus(room);
               
               return (
-                <div key={room.id} className="game-card">
+                <div 
+                  key={room.id} 
+                  className="game-card"
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+                    e.currentTarget.style.setProperty('--mouse-y', `${y}%`);
+                  }}
+                >
                   {/* Player Match Display */}
                   <div className="player-match">
                     <div className="player-info">
@@ -334,7 +372,29 @@ export const Lobby: React.FC<LobbyProps> = ({ onRoomJoined, authUser }) => {
                   
                   {/* Game Meta Info */}
                   <div className="game-meta">
-                    <span className="room-code-display">{t('lobby.status.roomCode', { code: room.id })}</span>
+                    <div className="room-code-modern">
+                      <span className="room-code-icon">#</span>
+                      <span className="room-code-value">{room.id}</span>
+                      <button 
+                        className="room-code-copy"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(room.id);
+                          const button = e.currentTarget;
+                          button.classList.add('copied');
+                          setTimeout(() => button.classList.remove('copied'), 2000);
+                        }}
+                        title={t('lobby.copyRoomCode')}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        <svg className="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </button>
+                    </div>
                     <span className={`game-status ${gameStatus.className}`}>
                       {gameStatus.text}
                     </span>

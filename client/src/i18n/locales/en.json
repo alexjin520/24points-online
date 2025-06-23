@@ -23,8 +23,289 @@
       "puzzles": "Records",
       "learn": "Learn",
       "leaderboard": "Leaderboard",
+      "badges": "Badges",
       "signIn": "Sign In",
       "signUp": "Sign Up"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "badges": {
+    "loading": "Loading badges...",
+    "gallery": {
+      "title": "Badge Collection",
+      "noBadgesFound": "No badges found matching your criteria"
+    },
+    "level": "Level",
+    "points": "Points",
+    "filter": {
+      "searchPlaceholder": "Search badges...",
+      "showEarnedOnly": "Show earned badges only"
+    },
+    "categories": {
+      "all": "All",
+      "skill": "Skill",
+      "progression": "Progression",
+      "mode": "Game Modes",
+      "social": "Social",
+      "unique": "Unique",
+      "seasonal": "Seasonal"
+    },
+    "rarity": {
+      "common": "Common",
+      "rare": "Rare",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    },
+    "detail": {
+      "earned": "You've earned this badge!",
+      "progress": "Progress",
+      "progressText": "{{current}} / {{target}}",
+      "requirements": "Requirements",
+      "category": "Category",
+      "tierProgression": "Tier Progression"
+    },
+    "notification": {
+      "unlocked": "Badge Unlocked!",
+      "viewDetails": "View Details",
+      "tierUpgrade": "Upgraded from {{from}} to {{to}}"
+    },
+    "pointsToNextLevel": "{{points}} points to next level",
+    "milestoneAchieved": "Level {{level}} Milestone!",
+    "levelUp": {
+      "title": "LEVEL UP!",
+      "message": "Congratulations! You've reached Level {{level}}!",
+      "unlockRareBadges": "Rare badges unlocked!",
+      "profileCustomization": "Profile customization unlocked!",
+      "unlockEpicBadges": "Epic badges unlocked!",
+      "unlockLegendaryBadges": "Legendary badges unlocked!"
+    },
+    "authRequired": {
+      "title": "Sign In Required",
+      "message": "You need to sign in to view and track your badge collection. Create an account to start earning badges!"
+    },
+    "definitions": {
+      "speed_demon_bronze": {
+        "name": "Speed Demon Bronze",
+        "description": "Solve a puzzle in under 10 seconds"
+      },
+      "speed_demon_silver": {
+        "name": "Speed Demon Silver",
+        "description": "Solve a puzzle in under 7 seconds"
+      },
+      "speed_demon_gold": {
+        "name": "Speed Demon Gold",
+        "description": "Solve a puzzle in under 5 seconds"
+      },
+      "speed_demon_platinum": {
+        "name": "Speed Demon Platinum",
+        "description": "Solve a puzzle in under 4 seconds"
+      },
+      "speed_demon_diamond": {
+        "name": "Speed Demon Diamond",
+        "description": "Solve a puzzle in under 3 seconds"
+      },
+      "lightning_reflexes_bronze": {
+        "name": "Lightning Reflexes Bronze",
+        "description": "Be first to solve in 10 rounds"
+      },
+      "lightning_reflexes_silver": {
+        "name": "Lightning Reflexes Silver",
+        "description": "Be first to solve in 25 rounds"
+      },
+      "lightning_reflexes_gold": {
+        "name": "Lightning Reflexes Gold",
+        "description": "Be first to solve in 50 rounds"
+      },
+      "lightning_reflexes_platinum": {
+        "name": "Lightning Reflexes Platinum",
+        "description": "Be first to solve in 100 rounds"
+      },
+      "lightning_reflexes_diamond": {
+        "name": "Lightning Reflexes Diamond",
+        "description": "Be first to solve in 250 rounds"
+      },
+      "flawless_victory": {
+        "name": "Flawless Victory",
+        "description": "Win 10-0 (opponent gets all 20 cards)"
+      },
+      "veteran_bronze": {
+        "name": "Veteran Bronze",
+        "description": "Play 10 games"
+      },
+      "veteran_silver": {
+        "name": "Veteran Silver",
+        "description": "Play 50 games"
+      },
+      "veteran_gold": {
+        "name": "Veteran Gold",
+        "description": "Play 100 games"
+      },
+      "veteran_platinum": {
+        "name": "Veteran Platinum",
+        "description": "Play 500 games"
+      },
+      "veteran_diamond": {
+        "name": "Veteran Diamond",
+        "description": "Play 1000 games"
+      },
+      "champion_bronze": {
+        "name": "Champion Bronze",
+        "description": "Win 10 games"
+      },
+      "champion_silver": {
+        "name": "Champion Silver",
+        "description": "Win 50 games"
+      },
+      "champion_gold": {
+        "name": "Champion Gold",
+        "description": "Win 100 games"
+      },
+      "champion_platinum": {
+        "name": "Champion Platinum",
+        "description": "Win 500 games"
+      },
+      "champion_diamond": {
+        "name": "Champion Diamond",
+        "description": "Win 1000 games"
+      },
+      "unstoppable_bronze": {
+        "name": "Unstoppable Bronze",
+        "description": "Win 3 games in a row"
+      },
+      "unstoppable_silver": {
+        "name": "Unstoppable Silver",
+        "description": "Win 5 games in a row"
+      },
+      "unstoppable_gold": {
+        "name": "Unstoppable Gold",
+        "description": "Win 10 games in a row"
+      },
+      "unstoppable_platinum": {
+        "name": "Unstoppable Platinum",
+        "description": "Win 15 games in a row"
+      },
+      "unstoppable_diamond": {
+        "name": "Unstoppable Diamond",
+        "description": "Win 20 games in a row"
+      },
+      "daily_devotion_bronze": {
+        "name": "Daily Devotion Bronze",
+        "description": "Play for 7 consecutive days"
+      },
+      "daily_devotion_silver": {
+        "name": "Daily Devotion Silver",
+        "description": "Play for 30 consecutive days"
+      },
+      "daily_devotion_gold": {
+        "name": "Daily Devotion Gold",
+        "description": "Play for 100 consecutive days"
+      },
+      "daily_devotion_platinum": {
+        "name": "Daily Devotion Platinum",
+        "description": "Play for 365 consecutive days"
+      },
+      "weekend_warrior": {
+        "name": "Weekend Warrior",
+        "description": "Play 50 games on weekends"
+      },
+      "classic_master": {
+        "name": "Classic Master",
+        "description": "Win 100 games in Classic mode"
+      },
+      "super_mode_champion": {
+        "name": "Super Mode Champion",
+        "description": "Win 50 games in Super Mode (8 cards)"
+      },
+      "extended_range_expert": {
+        "name": "Extended Range Expert",
+        "description": "Win 50 games in Extended Range mode"
+      },
+      "solo_practice_guru": {
+        "name": "Solo Practice Guru",
+        "description": "Complete 500 solo practice puzzles"
+      },
+      "mode_explorer": {
+        "name": "Mode Explorer",
+        "description": "Win at least once in each game mode"
+      },
+      "friendly_rival": {
+        "name": "Friendly Rival",
+        "description": "Play 50 games with the same opponent"
+      },
+      "spectator_sport": {
+        "name": "Spectator Sport",
+        "description": "Watch 100 games as a spectator"
+      },
+      "record_breaker_bronze": {
+        "name": "Record Breaker Bronze",
+        "description": "Hold 1 puzzle records"
+      },
+      "record_breaker_silver": {
+        "name": "Record Breaker Silver",
+        "description": "Hold 10 puzzle records"
+      },
+      "record_breaker_gold": {
+        "name": "Record Breaker Gold",
+        "description": "Hold 50 puzzle records"
+      },
+      "record_breaker_platinum": {
+        "name": "Record Breaker Platinum",
+        "description": "Hold 100 puzzle records"
+      },
+      "comeback_king": {
+        "name": "Comeback King",
+        "description": "Win after being down 0-5"
+      },
+      "underdog": {
+        "name": "Underdog",
+        "description": "Beat an opponent with 500+ more games played"
+      },
+      "night_owl": {
+        "name": "Night Owl",
+        "description": "Play 50 games between midnight and 6am"
+      },
+      "early_bird": {
+        "name": "Early Bird",
+        "description": "Play 50 games between 5am and 8am"
+      },
+      "marathon_runner": {
+        "name": "Marathon Runner",
+        "description": "Play for 3+ hours straight"
+      },
+      "quick_thinker": {
+        "name": "Quick Thinker",
+        "description": "Solve 10 puzzles under 1 second each"
+      },
+      "mathematical_genius": {
+        "name": "Mathematical Genius",
+        "description": "Use all 4 operations (+, -, ×, ÷) in one solution"
+      },
+      "minimalist": {
+        "name": "Minimalist",
+        "description": "Win a game using only addition and subtraction"
+      },
+      "international_player": {
+        "name": "International Player",
+        "description": "Play games in both English and Chinese"
+      },
+      "launch_week_pioneer": {
+        "name": "Launch Week Pioneer",
+        "description": "Played during the first week of launch"
+      },
+      "beta_tester": {
+        "name": "Beta Tester",
+        "description": "Participated in beta testing new features"
+      }
     }
   },
   "lobby": {
@@ -41,6 +322,9 @@
     "createRoom": "Create New Room",
     "joinRoom": "Join Room",
     "joinBattle": "JOIN BATTLE",
+    "rankedPlay": "Ranked Play",
+    "rankedPlayDesc": "Compete in ranked matches",
+    "findMatch": "Find Match",
     "spectate": "👁️ SPECTATE",
     "soloPractice": "Solo Practice",
     "placeholders": {
@@ -99,6 +383,11 @@
     "room": "Room: {{code}}",
     "round": "Round {{number}}",
     "spectating": "👁️ Spectating",
+    "winConditions": {
+      "classic": "First to 4 points",
+      "extended": "First to 4 points",
+      "super": "First to 4 points"
+    },
     "status": {
       "loading": "Loading game...",
       "waitingForData": "Waiting for game data...",
@@ -127,7 +416,10 @@
       "appeared": "Appeared {{count}} times",
       "record": "Record: {{username}} in {{time}}s",
       "newRecord": "NEW RECORD!",
-      "firstTime": "First time puzzle! You'll set the record!"
+      "firstTime": "First time puzzle! You'll set the record!",
+      "beatRecord": "{{playerName}} beat it by {{difference}}s!",
+      "noRecordYet": "No record yet",
+      "yourTime": "{{playerName}} solved in {{time}}s"
     }
   },
   "gameReport": {
@@ -194,7 +486,32 @@
       "cardsGoTo": "Cards go to:",
       "nextRound": "Next round starts in 5 seconds..."
     },
-    "continueNow": "Continue Now"
+    "continueNow": "Continue Now",
+    "firstSolve": "{{winner}} did it first in {{time}}s!"
+  },
+  "ranked": {
+    "title": "Matchmaking",
+    "rankedMode": "Ranked",
+    "casualMode": "Casual",
+    "authRequired": "Sign in to play ranked matches and track your rating",
+    "signIn": "Sign In",
+    "selectGameMode": "Select Game Mode",
+    "joinRankedQueue": "Find Ranked Match",
+    "joinCasualQueue": "Find Casual Match",
+    "leaveQueue": "Leave Queue",
+    "queueTime": "Queue Time",
+    "searchRange": "Search Range",
+    "estimatedWait": "Est. Wait",
+    "estimatedSeconds": "~{{seconds}}s",
+    "calculating": "Calculating...",
+    "placementMatches": "{{count}} placement matches remaining",
+    "recentMatches": "Recent Matches",
+    "win": "Win",
+    "loss": "Loss",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}} hr ago",
+    "daysAgo": "{{count}} days ago"
   },
   "gameOver": {
     "spectator": {
@@ -208,6 +525,7 @@
     "performanceMetrics": "🎯 Performance Metrics",
     "cardStatistics": "🃏 Card Statistics",
     "matchAchievements": "🏅 Match Achievements",
+    "unlockedBadges": "🏆 Unlocked Badges",
     "messages": {
       "opponentDisconnected": "Your opponent disconnected and forfeited the game!",
       "youDisconnected": "You were disconnected and the game was forfeited.",
@@ -264,8 +582,6 @@
     "or": "OR",
     "continueWithGoogle": "Continue with Google",
     "continueAsGuest": "Continue as Guest",
-    "signIn": "Sign In",
-    "signUp": "Sign Up",
     "email": "Email",
     "emailPlaceholder": "Enter your email",
     "password": "Password",
@@ -330,16 +646,86 @@
   },
   "leaderboard": {
     "recordHoldings": "Record Holdings",
-    "eloRank": "Elo Rank (Coming Soon)",
+    "badges": "Badge Rankings",
+    "eloRank": "Elo Rank",
     "totalPuzzles": "Total unique puzzles: {{count}}",
     "noRecordsYet": "No records yet. Be the first to set a record!",
+    "noBadgesYet": "No badges earned yet. Play games to unlock badges!",
+    "badgeLeaderboard": "Top players by badge points",
     "you": "You",
     "records": "records",
+    "badgesEarned": "badges",
+    "points": "points",
+    "sortBy": "Sort by",
+    "sortByPoints": "Total Points",
+    "sortByCount": "Badge Count",
+    "sortByLegendary": "Legendary Badges",
+    "sortByEpic": "Epic Badges",
+    "sortByRare": "Rare Badges",
     "loading": "Loading...",
     "comingSoon": "Coming Soon",
-    "eloDescription": "Elo ranking system will track your competitive performance"
+    "eloDescription": "Elo ranking system will track your competitive performance",
+    "rankedLeaderboard": "Ranked Leaderboard",
+    "region": "Region",
+    "global": "Global",
+    "northAmerica": "North America",
+    "europe": "Europe",
+    "asia": "Asia",
+    "noRankedPlayers": "No ranked players yet",
+    "rating": "Rating",
+    "peak": "Peak",
+    "games": "Games",
+    "winRate": "Win Rate",
+    "loadMore": "Load More",
+    "connectionError": "Failed to connect to the ranking server",
+    "databaseError": "Database tables not configured. Please run migrations.",
+    "databaseHint": "Contact the administrator to set up the ELO ranking system.",
+    "retry": "Retry"
   },
   "patchNotes": {
     "title": "Patch Notes"
+  },
+  "profile": {
+    "notLoggedIn": "Please sign in to view your profile",
+    "memberSince": "Member since {{date}}",
+    "statistics": "Statistics",
+    "gamesPlayed": "Games Played",
+    "gamesWon": "Games Won",
+    "winRate": "Win Rate",
+    "avgSolveTime": "Avg. Solve Time",
+    "fastestSolve": "Fastest Solve",
+    "longestStreak": "Longest Win Streak",
+    "recentGames": "Recent Games",
+    "noRecentGames": "No recent games to display",
+    "tabs": {
+      "overview": "Overview",
+      "ranked": "Ranked",
+      "badges": "Badges"
+    },
+    "placementMatches": "{{count}} placement matches remaining",
+    "matchHistory": "Match History",
+    "win": "Win",
+    "loss": "Loss",
+    "noMatchHistory": "No ranked matches played yet",
+    "noRankedStats": "Play ranked matches to see your statistics"
+  },
+  "badges": {
+    "featuredBadges": "Featured Badges",
+    "edit": "Edit",
+    "level": "Level",
+    "totalPoints": "Total Points",
+    "totalBadges": "Total Badges",
+    "noFeaturedBadges": "No featured badges selected",
+    "selectBadges": "Select Badges",
+    "selectFeaturedBadges": "Select Featured Badges",
+    "selectUpTo": "Select up to {{count}} badges to feature on your profile",
+    "points": "Points",
+    "tier": "Tier",
+    "rarity": {
+      "common": "Common",
+      "rare": "Rare",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    }
   }
 }

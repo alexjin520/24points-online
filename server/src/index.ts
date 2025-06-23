@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,6 +19,9 @@ if (process.env.NODE_ENV === 'production') {
   allowedOrigins.push('https://verdant-flan-eeb30e.netlify.app');
   allowedOrigins.push('https://twentyfourpoints.com');
   allowedOrigins.push('https://www.twentyfourpoints.com');
+  // Also allow without trailing slash
+  allowedOrigins.push('http://twentyfourpoints.com');
+  allowedOrigins.push('http://www.twentyfourpoints.com');
 }
 
 const io = new Server(server, {
@@ -36,6 +40,7 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/health', (req: express.Request, res: express.Response) => {
@@ -45,10 +50,48 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 // API Routes
 import authRoutes from './routes/auth';
 import debugRoutes from './routes/debug';
+import badgeRoutes from './routes/badges';
 app.use('/api/auth', authRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/badges', badgeRoutes);
 
 import { handleConnection } from './socket/connectionHandler';
+import { verifyAccessToken } from './auth/jwt';
+
+// Socket.io authentication middleware
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    console.log('[Socket Auth] Token received:', token ? 'Yes' : 'No');
+    
+    if (token) {
+      // Verify JWT token
+      const payload = verifyAccessToken(token);
+      console.log('[Socket Auth] Token verified:', payload.username);
+      // Attach user info to socket
+      (socket as any).userId = payload.userId;
+      (socket as any).username = payload.username;
+      (socket as any).email = payload.email;
+      (socket as any).role = payload.role;
+      (socket as any).isAuthenticated = true;
+    } else {
+      // Allow anonymous connections but mark as not authenticated
+      (socket as any).isAuthenticated = false;
+    }
+    
+    next();
+  } catch (error) {
+    console.log('[Socket Auth] Token verification failed:', error);
+    // Check if it's a token expiration error
+    if (error instanceof Error && error.name === 'TokenExpiredError') {
+      // Send specific error for expired tokens
+      return next(new Error('jwt expired'));
+    }
+    // Allow connection even if token is invalid (for anonymous play)
+    (socket as any).isAuthenticated = false;
+    next();
+  }
+});
 
 io.on('connection', (socket) => {
   handleConnection(io, socket);

@@ -5,11 +5,14 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server/src/index.js",
     "start:prod": "npm run build && npm start",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "seed:badges": "ts-node src/scripts/seedBadges.ts",
+    "migration:comprehensive-fix": "node scripts/run-comprehensive-fix.js",
+    "migration:elo-fix": "node scripts/run-elo-fix-migration.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -20,8 +23,11 @@
   "description": "",
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
+    "@types/cookie-parser": "^1.4.9",
     "@types/uuid": "^10.0.0",
+    "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",

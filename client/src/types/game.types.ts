@@ -11,6 +11,7 @@ export interface Player {
   deck: Card[];
   isReady: boolean;
   points?: number; // For point-based scoring in Extended Range mode
+  isAI?: boolean; // For solo practice mode
 }
 
 export interface GameRoom {
@@ -41,6 +42,16 @@ export interface GameRoom {
     } | null;
   };
   newRecordSet?: boolean;
+  // Ranked match data
+  isRanked?: boolean;
+  rankedData?: {
+    matchId?: string;
+    player1Rating: number;
+    player2Rating: number;
+    ratingChanges?: {
+      [playerId: string]: number;
+    };
+  };
 }
 
 export const GameState = {

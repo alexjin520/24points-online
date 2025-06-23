@@ -1,6 +1,12 @@
 import { Server, Socket } from 'socket.io';
 import roomManager from './RoomManager';
 import { Solution, GameState } from '../types/game.types';
+import { authService } from '../auth/authService';
+import { badgeDetectionService } from '../badges/BadgeDetectionService';
+import { statisticsService } from '../badges/StatisticsService';
+import { setupRankedHandlers } from './rankedHandler';
+import { registerMatchAnalyticsHandlers } from './handlers/matchAnalytics';
+import { registerMatchReplayHandlers } from './handlers/matchReplay';
 
 // Helper function to broadcast game state to spectators
 function broadcastToSpectators(io: Server, roomId: string, event: string, data: any) {
@@ -18,13 +24,56 @@ export const handleConnection = (io: Server, socket: Socket) => {
   
   // Set io instance in RoomManager if not already set
   roomManager.setIo(io);
+  
+  // Set up ranked game handlers
+  setupRankedHandlers(io, socket);
+  
+  // Set up match analytics handlers
+  registerMatchAnalyticsHandlers(socket);
+  
+  // Set up match replay handlers
+  registerMatchReplayHandlers(socket);
 
-  socket.on('create-room', (data: { playerName: string; roomType?: string; isSoloPractice?: boolean }) => {
-    const playerId = `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  socket.on('create-room', async (data: { playerName: string; roomType?: string; isSoloPractice?: boolean }) => {
+    // For authenticated users, use their actual user ID for badge tracking
+    let playerId: string;
+    if ((socket as any).isAuthenticated && (socket as any).userId) {
+      playerId = (socket as any).userId;
+    } else {
+      // Guest player - generate temporary ID
+      playerId = `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
     const roomType = data.roomType || 'classic';
     
+    // Use authenticated username if available, otherwise validate guest name
+    let playerName: string;
+    console.log('[ConnectionHandler] Auth check:', {
+      isAuthenticated: (socket as any).isAuthenticated,
+      username: (socket as any).username,
+      userId: (socket as any).userId,
+      providedName: data.playerName
+    });
+    
+    if ((socket as any).isAuthenticated && (socket as any).username) {
+      playerName = (socket as any).username;
+    } else {
+      playerName = data.playerName;
+      
+      // Check if guest is trying to use a registered username
+      if (!data.isSoloPractice) {
+        const isRegistered = await authService.checkUsernameAvailability(playerName);
+        if (isRegistered) {
+          socket.emit('room-creation-error', { 
+            message: 'This username is registered. Please sign in or choose a different name.' 
+          });
+          return;
+        }
+      }
+    }
+    
     console.log('[ConnectionHandler] Creating room:', {
-      playerName: data.playerName,
+      playerName,
+      isAuthenticated: (socket as any).isAuthenticated,
       roomType,
       isSoloPractice: data.isSoloPractice,
       playerId,
@@ -32,7 +81,7 @@ export const handleConnection = (io: Server, socket: Socket) => {
     });
     
     try {
-      const room = roomManager.createRoom(playerId, socket.id, data.playerName, roomType, data.isSoloPractice);
+      const room = roomManager.createRoom(playerId, socket.id, playerName, roomType, data.isSoloPractice);
       
       socket.join(room.id);
       socket.emit('room-created', { 
@@ -80,24 +129,56 @@ export const handleConnection = (io: Server, socket: Socket) => {
     }
   });
 
-  socket.on('join-room', (data: { roomId: string; playerName: string; isSpectator?: boolean }) => {
+  socket.on('join-room', async (data: { roomId: string; playerName: string; isSpectator?: boolean }) => {
     console.log('[Server] join-room received:', data);
+    
+    // Use authenticated username if available, otherwise validate guest name
+    let playerName: string;
+    console.log('[ConnectionHandler] Join room auth check:', {
+      isAuthenticated: (socket as any).isAuthenticated,
+      username: (socket as any).username,
+      userId: (socket as any).userId,
+      providedName: data.playerName,
+      isSpectator: data.isSpectator
+    });
+    
+    if ((socket as any).isAuthenticated && (socket as any).username) {
+      playerName = (socket as any).username;
+    } else {
+      playerName = data.playerName;
+      
+      // Check if guest is trying to use a registered username (except for spectators)
+      if (!data.isSpectator) {
+        const isRegistered = await authService.checkUsernameAvailability(playerName);
+        if (isRegistered) {
+          socket.emit('join-room-error', { 
+            message: 'This username is registered. Please sign in or choose a different name.' 
+          });
+          return;
+        }
+      }
+    }
     
     // Check if this is a reconnection first
     const room = roomManager.getRoom(data.roomId);
-    const existingPlayer = room?.players.find(p => !p.socketId && p.name === data.playerName);
+    const existingPlayer = room?.players.find(p => !p.socketId && p.name === playerName);
     
     let playerId: string;
     if (existingPlayer) {
       // Reconnection - use existing player ID
       playerId = existingPlayer.id;
-      console.log(`[ConnectionHandler] Reconnection detected for player ${data.playerName}`);
+      console.log(`[ConnectionHandler] Reconnection detected for player ${playerName}`);
     } else {
-      // New player - generate new ID
-      playerId = `${data.isSpectator ? 'spectator' : 'player'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      // For authenticated users, use their actual user ID for badge tracking
+      if ((socket as any).isAuthenticated && (socket as any).userId) {
+        playerId = (socket as any).userId;
+      } else {
+        // Guest player - generate temporary ID
+        playerId = `${data.isSpectator ? 'spectator' : 'player'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      }
     }
     
-    const joinedRoom = roomManager.joinRoom(data.roomId, playerId, socket.id, data.playerName, data.isSpectator);
+    const joinedRoom = roomManager.joinRoom(data.roomId, playerId, socket.id, playerName, data.isSpectator);
     
     if (!joinedRoom) {
       socket.emit('join-room-error', { message: 'Room not found or full' });
@@ -313,18 +394,23 @@ export const handleConnection = (io: Server, socket: Socket) => {
       const gameState = roomManager.getGameState(room.id);
       if (!gameState) return;
 
+      // Get the round result which includes solve time
+      const roundResult = roomManager.getLastRoundResult(room.id);
+      if (!roundResult) return;
+
       // Determine round result
       const isCorrect = data.solution.result === 24;
       const winnerId = isCorrect ? player.id : room.players.find(p => p.id !== player.id)?.id || null;
       const loserId = isCorrect ? room.players.find(p => p.id !== player.id)?.id || null : player.id;
       
-      // Emit round result with proper reason
+      // Emit round result with proper reason and solve time
       io.to(room.id).emit('round-ended', {
         winnerId,
         loserId,
         solution: data.solution,
         correct: isCorrect,
-        reason: isCorrect ? 'correct_solution' : 'incorrect_solution'
+        reason: isCorrect ? 'correct_solution' : 'incorrect_solution',
+        solveTime: roundResult.solveTime
       });
       
       // Also send round-ended to spectators
@@ -333,11 +419,12 @@ export const handleConnection = (io: Server, socket: Socket) => {
         loserId,
         solution: data.solution,
         correct: isCorrect,
-        reason: isCorrect ? 'correct_solution' : 'incorrect_solution'
+        reason: isCorrect ? 'correct_solution' : 'incorrect_solution',
+        solveTime: roundResult.solveTime
       });
 
       // Update game state for all players
-      setTimeout(() => {
+      setTimeout(async () => {
         const currentState = roomManager.getGameState(room.id);
         if (currentState) {
           // Always emit the updated game state first
@@ -349,6 +436,23 @@ export const handleConnection = (io: Server, socket: Socket) => {
           // Send full game state to spectators
           const spectatorRoomId = `spectators-${room.id}`;
           io.to(spectatorRoomId).emit('game-state-updated', currentState);
+          
+          // Check for badges after each round in solo practice
+          if (room.isSoloPractice && isCorrect) {
+            const humanPlayer = room.players.find(p => !p.isAI);
+            if (humanPlayer) {
+              // Initialize stats if needed
+              await statisticsService.initializeUserStats(humanPlayer.id, humanPlayer.name);
+              
+              // Check for new badges
+              const newBadges = await badgeDetectionService.checkBadgesAfterGame(humanPlayer.id);
+              
+              // Notify player of new badges
+              if (newBadges.length > 0) {
+                io.to(humanPlayer.socketId).emit('badges-unlocked', newBadges);
+              }
+            }
+          }
 
           if (currentState.state === 'game_over') {
             // Get the game over result from the game manager
@@ -367,6 +471,29 @@ export const handleConnection = (io: Server, socket: Socket) => {
               // Also send game-over to spectators
               const spectatorRoomId = `spectators-${room.id}`;
               io.to(spectatorRoomId).emit('game-over', gameOverData);
+              
+              // Check for new badges after game
+              if (gameOverResult) {
+                const players = currentState.players;
+                
+                // In solo practice, only check badges for the human player
+                const playersToCheck = room.isSoloPractice 
+                  ? players.filter(p => !p.isAI)
+                  : players;
+                
+                for (const player of playersToCheck) {
+                  // Initialize stats if needed
+                  await statisticsService.initializeUserStats(player.id, player.name);
+                  
+                  // Check for new badges
+                  const newBadges = await badgeDetectionService.checkBadgesAfterGame(player.id);
+                  
+                  // Notify player of new badges
+                  if (newBadges.length > 0) {
+                    io.to(player.socketId).emit('badges-unlocked', newBadges);
+                  }
+                }
+              }
             } else {
               // Fallback to old logic if no game over result
               const player1 = currentState.players[0];
@@ -397,6 +524,29 @@ export const handleConnection = (io: Server, socket: Socket) => {
               // Also send game-over to spectators
               const spectatorRoomId = `spectators-${room.id}`;
               io.to(spectatorRoomId).emit('game-over', gameOverData);
+              
+              // Check for new badges after game
+              if (gameOverResult) {
+                const players = currentState.players;
+                
+                // In solo practice, only check badges for the human player
+                const playersToCheck = room.isSoloPractice 
+                  ? players.filter(p => !p.isAI)
+                  : players;
+                
+                for (const player of playersToCheck) {
+                  // Initialize stats if needed
+                  await statisticsService.initializeUserStats(player.id, player.name);
+                  
+                  // Check for new badges
+                  const newBadges = await badgeDetectionService.checkBadgesAfterGame(player.id);
+                  
+                  // Notify player of new badges
+                  if (newBadges.length > 0) {
+                    io.to(player.socketId).emit('badges-unlocked', newBadges);
+                  }
+                }
+              }
             }
           } else {
             currentState.players.forEach(p => {
@@ -500,6 +650,12 @@ export const handleConnection = (io: Server, socket: Socket) => {
   socket.on('request-rematch', () => {
     const room = roomManager.getRoomBySocketId(socket.id);
     if (!room || room.state !== GameState.GAME_OVER) return;
+
+    // Prevent rematch in ranked games
+    if (room.isRanked) {
+      socket.emit('rematch-error', { message: 'Rematch is not allowed in ranked games' });
+      return;
+    }
 
     const player = room.players.find(p => p.socketId === socket.id);
     if (!player) return;
@@ -624,7 +780,17 @@ export const handleConnection = (io: Server, socket: Socket) => {
       const { getAllPuzzles, solveRecords } = require('../models/puzzleRepository');
       const { supabase, isDatabaseConfigured } = require('../db/supabase');
       
-      let recordHoldings: { username: string; recordCount: number; rank: number }[] = [];
+      let recordHoldings: { 
+        username: string; 
+        recordCount: number; 
+        rank: number;
+        badgeCount?: number;
+        badgePoints?: number;
+        level?: number;
+        legendaryBadges?: number;
+        epicBadges?: number;
+        rareBadges?: number;
+      }[] = [];
       let totalPuzzles = 0;
       
       if (isDatabaseConfigured() && supabase) {
@@ -700,6 +866,122 @@ export const handleConnection = (io: Server, socket: Socket) => {
           .map((entry, index) => ({ ...entry, rank: index + 1 }));
       }
       
+      // Fetch badge statistics for leaderboard users if database is configured
+      if (isDatabaseConfigured() && supabase && recordHoldings.length > 0) {
+        try {
+          // Get all usernames from the leaderboard
+          const usernames = recordHoldings.slice(0, 100).map(entry => entry.username);
+          
+          // First, get user IDs for these usernames
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, username')
+            .in('username', usernames);
+          
+          if (!userError && userData && userData.length > 0) {
+            console.log(`[Badge Leaderboard] Found ${userData.length} users with usernames`);
+            
+            // Create username to user_id mapping
+            const usernameToId = new Map<string, string>();
+            userData.forEach(user => {
+              usernameToId.set(user.username, user.id);
+            });
+            
+            // Get user IDs for badge query
+            const userIds = userData.map(user => user.id);
+            
+            // Fetch badge data for all users
+            const { data: badgeData, error: badgeError } = await supabase
+              .from('user_badges')
+              .select('*')
+              .in('user_id', userIds);
+          
+          if (!badgeError && badgeData) {
+            console.log(`[Badge Leaderboard] Found ${badgeData.length} badge records`);
+            
+            // Count badges by user and rarity
+            const badgeStats = new Map<string, {
+              badgeCount: number;
+              badgePoints: number;
+              legendaryBadges: number;
+              epicBadges: number;
+              rareBadges: number;
+            }>();
+            
+            // Initialize stats only for users that exist in the database
+            userData.forEach(user => {
+              badgeStats.set(user.username, {
+                badgeCount: 0,
+                badgePoints: 0,
+                legendaryBadges: 0,
+                epicBadges: 0,
+                rareBadges: 0
+              });
+            });
+            
+            // Process badge data
+            for (const userBadge of badgeData) {
+              // Find username for this user_id
+              let username: string | null = null;
+              for (const [uname, uid] of usernameToId.entries()) {
+                if (uid === userBadge.user_id) {
+                  username = uname;
+                  break;
+                }
+              }
+              
+              const stats = username ? badgeStats.get(username) : null;
+              if (stats) {
+                stats.badgeCount++;
+                
+                // Get badge definition to calculate points and rarity
+                const { getBadgeById } = require('../badges/badgeDefinitions');
+                const badge = getBadgeById(userBadge.badge_id);
+                if (badge) {
+                  stats.badgePoints += badge.points * (userBadge.tier || 1);
+                  
+                  // Count by rarity
+                  switch (badge.rarity) {
+                    case 'legendary':
+                      stats.legendaryBadges++;
+                      break;
+                    case 'epic':
+                      stats.epicBadges++;
+                      break;
+                    case 'rare':
+                      stats.rareBadges++;
+                      break;
+                  }
+                }
+              }
+            }
+            
+            // Merge badge stats with record holdings
+            recordHoldings = recordHoldings.map(entry => {
+              const stats = badgeStats.get(entry.username);
+              if (stats) {
+                const level = Math.floor(stats.badgePoints / 100) + 1;
+                // Only log if user has badges
+                if (stats.badgeCount > 0) {
+                  console.log(`[Badge Stats] ${entry.username}: points=${stats.badgePoints}, level=${level}, badges=${stats.badgeCount}`);
+                }
+                return {
+                  ...entry,
+                  ...stats,
+                  level
+                };
+              }
+              // User not in database, don't add badge stats
+              return entry;
+            });
+          }
+          } // Close the userData check
+        } catch (error) {
+          console.error('Error fetching badge statistics for leaderboard:', error);
+          // Continue without badge data
+        }
+      }
+      
       callback({
         recordHoldings: recordHoldings.slice(0, 100), // Top 100 players
         totalPuzzles
@@ -710,6 +992,303 @@ export const handleConnection = (io: Server, socket: Socket) => {
     }
   });
 
+  // Badge system handlers
+  socket.on('get-user-badges', async (data: { userId: string }, callback: (badges: any) => void) => {
+    try {
+      const result = await badgeDetectionService.getUserBadges(data.userId);
+      callback(result);
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+      callback({ success: false, badges: [], inProgress: [], totalPoints: 0, level: 1 });
+    }
+  });
+
+  socket.on('get-user-statistics', async (data: { userId: string }, callback: (stats: any) => void) => {
+    try {
+      const stats = await statisticsService.getUserStats(data.userId);
+      callback(stats);
+    } catch (error) {
+      console.error('Error fetching user statistics:', error);
+      callback(null);
+    }
+  });
+
+  socket.on('track-special-badge-event', async (data: { userId: string; eventType: string; eventData?: any }) => {
+    try {
+      const newBadges = await badgeDetectionService.trackSpecialEvent(
+        data.userId,
+        data.eventType,
+        data.eventData
+      );
+      
+      if (newBadges.length > 0) {
+        socket.emit('badges-unlocked', newBadges);
+      }
+    } catch (error) {
+      console.error('Error tracking special badge event:', error);
+    }
+  });
+
+  socket.on('update-featured-badges', async (data: { userId: string; badgeIds: string[] }, callback: (response: any) => void) => {
+    try {
+      // Validate that user is updating their own badges
+      const socketUserId = (socket as any).userId;
+      console.log('[Featured Badges] Update request - socketUserId:', socketUserId, 'targetUserId:', data.userId);
+      
+      // For authenticated users, verify they're updating their own badges
+      if ((socket as any).isAuthenticated) {
+        if (socketUserId !== data.userId) {
+          console.log('[Featured Badges] Unauthorized - user trying to update another user\'s badges');
+          callback({ success: false, error: 'Unauthorized' });
+          return;
+        }
+      } else {
+        // For guest users, allow updates if they have a consistent userId
+        if (!data.userId) {
+          console.log('[Featured Badges] No userId provided');
+          callback({ success: false, error: 'User ID required' });
+          return;
+        }
+      }
+
+      // Update featured badges (limit to 5)
+      const featuredBadgeIds = data.badgeIds.slice(0, 5);
+      const success = await badgeDetectionService.updateFeaturedBadges(data.userId, featuredBadgeIds);
+      
+      callback({ success });
+    } catch (error) {
+      console.error('Error updating featured badges:', error);
+      callback({ success: false, error: 'Failed to update featured badges' });
+    }
+  });
+
+  // ELO Test handlers
+  socket.on('get-test-players', async (callback: (data: { players: any[] }) => void) => {
+    try {
+      const { supabase, isDatabaseConfigured } = require('../db/supabase');
+      
+      if (!isDatabaseConfigured() || !supabase) {
+        console.log('[get-test-players] Database not configured');
+        callback({ players: [] });
+        return;
+      }
+      
+      // Try both 'users' and 'players' tables to see which one exists
+      let players: any[] = [];
+      
+      // First try the 'players' table
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select('id, username, rating')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (!playersError && playersData) {
+        console.log('[get-test-players] Found players in "players" table:', playersData.length);
+        players = playersData;
+      } else {
+        // If that fails, try the 'users' table (without rating column)
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, username')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (!usersError && usersData) {
+          console.log('[get-test-players] Found players in "users" table:', usersData.length);
+          // Add default rating of 1000 to each user
+          players = usersData.map(user => ({
+            ...user,
+            rating: 1000
+          }));
+        } else {
+          console.error('[get-test-players] Error fetching from both tables:', {
+            playersError,
+            usersError
+          });
+        }
+      }
+      
+      // Make sure our test user is in the list
+      const testUserId = '594e1ba2-d563-4cdf-8f1f-16ea3604ac2d';
+      const hasTestUser = players.some(p => p.id === testUserId);
+      
+      if (!hasTestUser) {
+        // Add a mock test user if not found
+        players.unshift({
+          id: testUserId,
+          username: 'Test User',
+          rating: 1000
+        });
+      }
+      
+      console.log('[get-test-players] Returning players:', players);
+      callback({ players });
+    } catch (error) {
+      console.error('Error in get-test-players:', error);
+      callback({ players: [] });
+    }
+  });
+
+  socket.on('test-elo-update', async (data: {
+    player1Id: string;
+    player2Id: string;
+    winnerId: string;
+    gameMode: string;
+    finalScore: any;
+    roundsPlayed: number;
+    duration: number;
+  }, callback: (response: any) => void) => {
+    try {
+      console.log('[test-elo-update] Received data:', data);
+      
+      // Validate required fields
+      if (!data.player1Id || !data.player2Id || !data.winnerId) {
+        callback({ 
+          success: false, 
+          error: `Missing required player IDs. Got: player1Id=${data.player1Id}, player2Id=${data.player2Id}, winnerId=${data.winnerId}` 
+        });
+        return;
+      }
+      
+      // Check if user is authenticated
+      if (!(socket as any).isAuthenticated) {
+        callback({ success: false, error: 'Authentication required' });
+        return;
+      }
+      
+      const { RatingService } = require('../services/RatingService');
+      const ratingService = new RatingService();
+      
+      // Determine winner and loser
+      const loserId = data.winnerId === data.player1Id ? data.player2Id : data.player1Id;
+      
+      // Calculate rounds won by each player
+      const winnerScore = data.finalScore[data.winnerId] || 0;
+      const loserScore = data.finalScore[loserId] || 0;
+      
+      // Update ratings using the correct method signature
+      const result = await ratingService.updateRatingsAfterMatch(
+        data.winnerId,
+        loserId,
+        data.gameMode as 'classic' | 'super' | 'extended',
+        {
+          duration: Math.floor(data.duration / 1000), // Convert to seconds
+          roundsPlayed: data.roundsPlayed,
+          winnerRoundsWon: winnerScore,
+          loserRoundsWon: loserScore
+        }
+      );
+      
+      console.log('[test-elo-update] Result:', JSON.stringify(result, null, 2));
+      
+      // Format the response - map winner/loser back to player1/player2
+      const player1IsWinner = data.player1Id === data.winnerId;
+      
+      callback({
+        success: true,
+        newRatings: {
+          player1: player1IsWinner ? {
+            before: result.winnerUpdate.oldRating,
+            after: result.winnerUpdate.newRating,
+            change: result.winnerUpdate.ratingChange
+          } : {
+            before: result.loserUpdate.oldRating,
+            after: result.loserUpdate.newRating,
+            change: result.loserUpdate.ratingChange
+          },
+          player2: player1IsWinner ? {
+            before: result.loserUpdate.oldRating,
+            after: result.loserUpdate.newRating,
+            change: result.loserUpdate.ratingChange
+          } : {
+            before: result.winnerUpdate.oldRating,
+            after: result.winnerUpdate.newRating,
+            change: result.winnerUpdate.ratingChange
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error in test-elo-update:', error);
+      callback({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  socket.on('test-reset-ratings', async (data: {
+    player1Id: string;
+    player2Id: string;
+    newRating: number;
+  }, callback: (response: any) => void) => {
+    try {
+      console.log('[test-reset-ratings] Received data:', data);
+      
+      // Check if user is authenticated
+      if (!(socket as any).isAuthenticated) {
+        callback({ success: false, error: 'Authentication required' });
+        return;
+      }
+      
+      const { supabase, isDatabaseConfigured } = require('../db/supabase');
+      
+      if (!isDatabaseConfigured() || !supabase) {
+        callback({ success: false, error: 'Database not configured' });
+        return;
+      }
+      
+      // Reset both players' ratings
+      const resetRating = data.newRating || 1200;
+      
+      // Update player_ratings table for both players
+      const updates = await Promise.all([
+        supabase
+          .from('player_ratings')
+          .update({ 
+            current_rating: resetRating,
+            peak_rating: resetRating,
+            games_played: 0,
+            wins: 0,
+            losses: 0,
+            win_streak: 0,
+            loss_streak: 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', data.player1Id),
+        supabase
+          .from('player_ratings')
+          .update({ 
+            current_rating: resetRating,
+            peak_rating: resetRating,
+            games_played: 0,
+            wins: 0,
+            losses: 0,
+            win_streak: 0,
+            loss_streak: 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', data.player2Id)
+      ]);
+      
+      // Check for errors
+      const errors = updates.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('[test-reset-ratings] Errors:', errors);
+        callback({ 
+          success: false, 
+          error: 'Failed to reset one or more ratings' 
+        });
+        return;
+      }
+      
+      callback({ 
+        success: true, 
+        message: `Both players' ratings have been reset to ${resetRating}!` 
+      });
+      
+    } catch (error) {
+      console.error('Error in test-reset-ratings:', error);
+      callback({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);

@@ -7,6 +7,7 @@ export class SuperGameRules extends BaseGameRules {
   initializeDecks(players: Player[]): void {
     players.forEach(player => {
       player.deck = [];
+      player.points = 0; // Initialize points for tug-of-war system
       // Super mode: 14 cards per player (1-10, plus 4 extra cards)
       for (let i = 1; i <= 10; i++) {
         player.deck.push({
@@ -87,41 +88,15 @@ export class SuperGameRules extends BaseGameRules {
   }
   
   calculateScore(solution: Solution, timeElapsed: number): number {
-    // Complexity scoring for Super mode
-    let score = 1; // Base score
-    
-    // Bonus points for using more cards
-    const cardsUsed = solution.cards.length;
-    if (cardsUsed >= 5) score += 1;
-    if (cardsUsed >= 6) score += 1;
-    if (cardsUsed === 7) score += 2; // Extra bonus for using all cards
-    
-    // Speed bonus (under 10 seconds)
-    if (timeElapsed < 10000) score += 1;
-    
-    // Complexity bonus for operations
-    const operations = solution.operations;
-    const hasMultiplication = operations.some(op => op.operator === '*');
-    const hasDivision = operations.some(op => op.operator === '/');
-    
-    if (hasMultiplication || hasDivision) score += 1;
-    
-    return score;
+    // Unified scoring: simple 1 point per correct solution
+    return 1;
   }
   
   checkWinCondition(room: GameRoom): WinResult | null {
-    // Same as classic: first to run out of cards wins
-    const winner = room.players.find(p => p.deck.length === 0);
+    // Check if any player has reached 4 points (wins)
+    const winner = room.players.find(p => (p.points || 0) >= 4);
     if (winner) {
-      return { winnerId: winner.id, reason: 'no_cards' };
-    }
-    
-    // Check if any player has all cards (loses)
-    const totalCards = this.config.cardsPerPlayer * room.players.length;
-    const loser = room.players.find(p => p.deck.length === totalCards);
-    if (loser) {
-      const winnerId = room.players.find(p => p.id !== loser.id)?.id;
-      return { winnerId: winnerId!, reason: 'opponent_all_cards' };
+      return { winnerId: winner.id, reason: 'reached_4_points' };
     }
     
     return null;

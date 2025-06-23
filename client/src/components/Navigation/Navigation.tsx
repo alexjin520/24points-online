@@ -6,20 +6,44 @@ import './Navigation.css';
 
 interface NavigationProps {
   username?: string;
+  rating?: number;
   onSignOut?: () => void;
-  onTestModeToggle?: () => void;
-  isTestMode?: boolean;
   onAuthSuccess?: (user: any) => void;
   onPuzzlesClick?: () => void;
   onPlayClick?: () => void;
   onLeaderboardClick?: () => void;
+  onBadgesClick?: () => void;
+  onProfileClick?: () => void;
   currentView?: string;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestModeToggle, isTestMode, onAuthSuccess, onPuzzlesClick, onPlayClick, onLeaderboardClick, currentView }) => {
+const Navigation: React.FC<NavigationProps> = ({ username, rating, onSignOut, onAuthSuccess, onPuzzlesClick, onPlayClick, onLeaderboardClick, onBadgesClick, onProfileClick, currentView }) => {
   const { t } = useTranslation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<'signin' | 'signup'>('signin');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnterDropdown = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    setShowUserDropdown(true);
+  };
+
+  const handleMouseLeaveDropdown = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setShowUserDropdown(false);
+    }, 300); // 300ms delay before closing
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
   return (
     <nav className="navigation">
       <div className="nav-container">
@@ -31,7 +55,7 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
           
           <div className="nav-links">
             <button 
-              className={`nav-link ${currentView === 'lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
+              className={`nav-link ${currentView === 'lobby' || currentView === 'ranked_lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
               onClick={onPlayClick}
             >
               <span className="nav-link-icon">🎮</span>
@@ -55,12 +79,19 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
               <span className="nav-link-icon">🏆</span>
               {t('app.nav.leaderboard')}
             </button>
+            <button 
+              className={`nav-link ${currentView === 'badges' ? 'active' : ''}`}
+              onClick={onBadgesClick}
+            >
+              <span className="nav-link-icon">🎖️</span>
+              {t('app.nav.badges')}
+            </button>
           </div>
           
           {/* Mobile navigation buttons */}
           <div className="nav-links-mobile">
             <button 
-              className={`nav-link ${currentView === 'lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
+              className={`nav-link ${currentView === 'lobby' || currentView === 'ranked_lobby' || currentView === 'waiting_room' || currentView === 'in_game' ? 'active' : ''}`}
               onClick={onPlayClick}
               title={t('app.nav.play')}
             >
@@ -73,48 +104,48 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
             >
               <span className="nav-link-icon">🧩</span>
             </button>
+            <button 
+              className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
+              onClick={onLeaderboardClick}
+              title={t('app.nav.leaderboard')}
+            >
+              <span className="nav-link-icon">🏆</span>
+            </button>
+            <button 
+              className={`nav-link ${currentView === 'badges' ? 'active' : ''}`}
+              onClick={onBadgesClick}
+              title={t('app.nav.badges')}
+            >
+              <span className="nav-link-icon">🎖️</span>
+            </button>
           </div>
         </div>
         
         <div className="nav-right">
-          {/* Mobile-only Puzzles/Records button */}
-          {onPuzzlesClick && (
-            <button 
-              className={`nav-link-mobile ${currentView === 'puzzles' ? 'active' : ''}`}
-              onClick={onPuzzlesClick}
-              title={t('app.nav.puzzles')}
-            >
-              🧩
-            </button>
-          )}
-          
-          {onTestModeToggle && (
-            <button 
-              className="test-mode-btn"
-              onClick={onTestModeToggle}
-              title={isTestMode ? t('app.exitTestMode') : t('app.testMode')}
-            >
-              <span className="test-mode-full">{isTestMode ? t('app.exitTestMode') : t('app.testMode')}</span>
-              <span className="test-mode-mobile">{isTestMode ? '✖' : '🧪'}</span>
-            </button>
-          )}
-          
           <LanguageToggle />
           
           {username ? (
             <>
-              <div className="nav-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Rating</span>
-                  <span className="stat-value">1500</span>
+              {rating !== undefined && (
+                <div className="nav-rating-display">
+                  <div className="rating-badge">
+                    <div className="rating-tier">
+                      {rating >= 2000 ? '👑' : rating >= 1800 ? '💎' : rating >= 1600 ? '🏆' : rating >= 1400 ? '⭐' : rating >= 1200 ? '🎯' : '🌟'}
+                    </div>
+                    <div className="rating-content">
+                      <span className="rating-label">ELO</span>
+                      <span className="rating-value">{rating}</span>
+                    </div>
+                    <div className="rating-glow"></div>
+                  </div>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Games</span>
-                  <span className="stat-value">0</span>
-                </div>
-              </div>
+              )}
               
-              <div className="nav-user">
+              <div 
+                className="nav-user"
+                onMouseEnter={handleMouseEnterDropdown}
+                onMouseLeave={handleMouseLeaveDropdown}
+              >
                 <button className="user-menu-trigger">
                   <div className="user-avatar">
                     {username.charAt(0).toUpperCase()}
@@ -125,10 +156,10 @@ const Navigation: React.FC<NavigationProps> = ({ username, onSignOut, onTestMode
                   </svg>
                 </button>
                 
-                <div className="user-dropdown">
-                  <a href="/profile" className="dropdown-item">Profile</a>
-                  <a href="/settings" className="dropdown-item">Settings</a>
-                  <a href="/stats" className="dropdown-item">Statistics</a>
+                <div className={`user-dropdown ${showUserDropdown ? 'show' : ''}`}>
+                  <button onClick={onProfileClick} className="dropdown-item">Profile</button>
+                  <button className="dropdown-item" disabled>Settings</button>
+                  <button className="dropdown-item" disabled>Statistics</button>
                   <div className="dropdown-divider"></div>
                   <button onClick={onSignOut} className="dropdown-item">Sign Out</button>
                 </div>

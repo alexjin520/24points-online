@@ -8,6 +8,10 @@ import { ClassicGameRules } from './rules/ClassicGameRules';
 import { SuperGameRules } from './rules/SuperGameRules';
 import { ExtendedGameRules } from './rules/ExtendedGameRules';
 import { trackPuzzle, recordSolveTime, getPuzzleStats, isNewRecord } from '../models/puzzleRepository';
+import { statisticsService } from '../badges/StatisticsService';
+import { RatingService } from '../services/RatingService';
+import { MatchAnalyticsService } from '../services/MatchAnalyticsService';
+import { MatchReplayService } from '../services/MatchReplayService';
 
 export interface GameEvent {
   type: 'round_start' | 'player_claim' | 'solution_attempt' | 'round_end' | 'game_over';
@@ -21,6 +25,7 @@ export interface RoundResult {
   cards: Card[];
   solution?: Solution;
   reason: 'correct_solution' | 'incorrect_solution' | 'no_solution';
+  solveTime?: number; // Time in seconds
 }
 
 export interface GameOverResult {
@@ -47,6 +52,7 @@ export class GameStateManager {
   protected static readonly DISCONNECT_TIMEOUT_MS = 30000; // 30 seconds
   protected config: RoomTypeConfig;
   protected gameRules: BaseGameRules;
+  protected currentMatchId: string | null = null;
 
   constructor(room: GameRoom, config?: RoomTypeConfig) {
     this.room = room;
@@ -148,10 +154,6 @@ export class GameStateManager {
       [player1.id]: 0,
       [player2.id]: 0
     };
-    this.room.incorrectAttempts = {
-      [player1.id]: 0,
-      [player2.id]: 0
-    };
   }
 
   /**
@@ -175,6 +177,17 @@ export class GameStateManager {
   }
 
   /**
+   * Set the match ID for replay recording (called for ranked games)
+   */
+  setMatchId(matchId: string): void {
+    this.currentMatchId = matchId;
+    if (this.room.isRanked) {
+      const replayService = MatchReplayService.getInstance();
+      replayService.startRecording(matchId);
+    }
+  }
+
+  /**
    * Start a new round
    */
   private async startNewRound(): Promise<void> {
@@ -184,6 +197,9 @@ export class GameStateManager {
       currentRound: this.room.currentRound,
       players: this.room.players.map(p => ({ id: p.id, name: p.name, deckSize: p.deck.length }))
     });
+    
+    // Clear puzzle record flag when starting new round
+    this.room.newRecordSet = false;
     
     // Check if game should end before starting new round
     const player1 = this.room.players[0];
@@ -344,16 +360,16 @@ export class GameStateManager {
       const otherPlayer = this.room.players.find(p => p.id !== playerId);
       const winner = this.room.players.find(p => p.id === playerId);
       
-      // Track statistics
+      // Track statistics (store in milliseconds)
+      const solveTimeMs = solveTime * 1000;
       if (this.room.roundTimes && this.room.roundTimes[playerId]) {
-        this.room.roundTimes[playerId].push(solveTime);
+        this.room.roundTimes[playerId].push(solveTimeMs);
       }
       if (this.room.correctSolutions) {
         this.room.correctSolutions[playerId]++;
       }
       
       // Record solve time for puzzle records
-      const solveTimeMs = solveTime * 1000; // Convert to milliseconds
       const cardValues = this.room.centerCards.map(c => c.value);
       
       // Convert operations to readable string format
@@ -373,20 +389,48 @@ export class GameStateManager {
       // Store if this was a new record
       this.room.newRecordSet = wasNewRecord;
       
+      // Update solo practice stats if applicable
+      if (this.room.isSoloPractice) {
+        statisticsService.updateSoloPracticeStats(
+          playerId,
+          solveTimeMs,
+          true // isCorrect
+        ).catch(err => console.error('Failed to update solo practice stats:', err));
+      }
+      
+      // Record replay for ranked matches
+      if (this.room.isRanked && this.currentMatchId) {
+        const replayService = MatchReplayService.getInstance();
+        replayService.recordGameRound(
+          this.currentMatchId,
+          this.room,
+          this.room.currentRound,
+          solution,
+          playerId,
+          solveTimeMs
+        ).catch(err => console.error('Failed to record replay:', err));
+      }
+      
       this.endRound({
         winnerId: playerId,
         loserId: otherPlayer?.id || null,
         cards: this.room.centerCards,
         solution,
-        reason: 'correct_solution'
+        reason: 'correct_solution',
+        solveTime: solveTime
       });
     } else {
       // Player loses
       const otherPlayer = this.room.players.find(p => p.id !== playerId);
       
-      // Track incorrect attempts
-      if (this.room.incorrectAttempts) {
-        this.room.incorrectAttempts[playerId]++;
+      // Update solo practice stats for incorrect attempt
+      if (this.room.isSoloPractice) {
+        const solveTimeMs = solveTime * 1000;
+        statisticsService.updateSoloPracticeStats(
+          playerId,
+          solveTimeMs,
+          false // isCorrect
+        ).catch(err => console.error('Failed to update solo practice stats:', err));
       }
       
       this.endRound({
@@ -414,42 +458,33 @@ export class GameStateManager {
       if (winner && loser) {
         console.log(`[GameStateManager] Round ended - Winner: ${winner.name} (${winner.id}), Loser: ${loser.name} (${loser.id})`);
         
-        // Handle Extended Range mode point-based scoring
-        if (this.config.id === 'extended') {
-          // Update points instead of transferring cards
-          if (loser.points === undefined) loser.points = 0;
-          if (winner.points === undefined) winner.points = 0;
-          
-          if (loser.points > 0) {
-            // Loser has points, so they lose one
-            loser.points--;
-            console.log(`[GameStateManager] Extended mode: ${loser.name} loses 1 point (now ${loser.points})`);
-          } else {
-            // Loser has no points, so winner gains one
-            winner.points++;
-            console.log(`[GameStateManager] Extended mode: ${winner.name} gains 1 point (now ${winner.points})`);
-          }
-          
-          // Return cards to their original owners' decks
-          result.cards.forEach(card => {
-            const owner = this.room.players.find(p => p.id === card.owner);
-            if (owner) {
-              owner.deck.push(card);
-            }
-          });
-          
-          // Shuffle both decks
-          this.room.players.forEach(player => {
-            this.gameRules.shuffleDeck(player.deck);
-          });
+        // Handle tug-of-war point-based scoring for all modes
+        // Update points instead of transferring cards
+        if (loser.points === undefined) loser.points = 0;
+        if (winner.points === undefined) winner.points = 0;
+        
+        if (loser.points > 0) {
+          // Loser has points, so they lose one
+          loser.points--;
+          console.log(`[GameStateManager] Tug-of-war: ${loser.name} loses 1 point (now ${loser.points})`);
         } else {
-          // Classic/Super mode: transfer cards
-          console.log(`[GameStateManager] Before transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length}`);
-          loser.deck.push(...result.cards);
-          // Shuffle the loser's deck to prevent the same cards from appearing repeatedly
-          this.gameRules.shuffleDeck(loser.deck);
-          console.log(`[GameStateManager] After transfer - Winner deck: ${winner.deck.length}, Loser deck: ${loser.deck.length} (added ${result.cards.length} cards)`);
+          // Loser has no points, so winner gains one
+          winner.points++;
+          console.log(`[GameStateManager] Tug-of-war: ${winner.name} gains 1 point (now ${winner.points})`);
         }
+        
+        // Return cards to their original owners' decks
+        result.cards.forEach(card => {
+          const owner = this.room.players.find(p => p.id === card.owner);
+          if (owner) {
+            owner.deck.push(card);
+          }
+        });
+        
+        // Shuffle both decks
+        this.room.players.forEach(player => {
+          this.gameRules.shuffleDeck(player.deck);
+        });
         
         // Update scores using game rules scoring
         const timeElapsed = Date.now() - this.roundStartTime;
@@ -480,36 +515,26 @@ export class GameStateManager {
 
     // Clear center cards
     this.room.centerCards = [];
-    
-    // Clear puzzle record flag after round ends
-    this.room.newRecordSet = false;
 
     // Check if we should show replay (only for correct solutions)
     if (result.reason === 'correct_solution' && result.solution && 
-        result.solution.operations && result.solution.operations.length > 0) {
-      // Enter replay state
+        result.solution.operations && result.solution.operations.length > 0 && !this.room.isSoloPractice) {
+      // Enter replay state (skip entirely in solo practice)
       this.room.state = GameState.REPLAY;
       this.replaySkipRequests.clear();
       
-      // In solo practice mode, skip replay immediately
-      if (this.room.isSoloPractice) {
-        console.log('[GameStateManager] Solo practice mode - skipping replay immediately');
-        this.replayTimeout = setTimeout(() => {
-          this.endReplay();
-        }, 100); // Minimal delay to ensure state updates propagate
-      } else {
-        // Set a timeout for replay duration (15 seconds to ensure animations complete)
-        this.replayTimeout = setTimeout(() => {
-          this.endReplay();
-        }, 15000);
-      }
+      // Set a timeout for replay duration (15 seconds to ensure animations complete)
+      this.replayTimeout = setTimeout(() => {
+        this.endReplay();
+      }, 15000);
     } else {
-      // No replay needed, start next round after a delay
+      // No replay needed (or solo practice mode), start next round after a delay
+      const delay = this.room.isSoloPractice ? 2500 : 3000; // Longer delay for solo to show victory celebration
       setTimeout(() => {
         if (this.room.state === GameState.ROUND_END) {
           this.startNewRound();
         }
-      }, 3000);
+      }, delay);
     }
   }
 
@@ -528,6 +553,16 @@ export class GameStateManager {
     }
     
     console.log(`[GameStateManager] Game forfeited by ${playerId}. Winner: ${otherPlayer.id}`);
+    
+    // Apply disconnect penalty if this is a ranked game
+    if (this.room.isRanked) {
+      const ratingService = RatingService.getInstance();
+      ratingService.applyDisconnectPenalty(playerId)
+        .then(update => {
+          console.log(`[GameStateManager] Applied disconnect penalty to ${playerId}: -${update.ratingChange} rating`);
+        })
+        .catch(err => console.error('Failed to apply disconnect penalty:', err));
+    }
     
     // End the game with the connected player as winner
     this.endGame(otherPlayer.id, 'forfeit');
@@ -574,10 +609,104 @@ export class GameStateManager {
       }
     };
     
+    // Update statistics if not solo practice
+    if (!this.room.isSoloPractice && winner && loser) {
+      const gameStats = {
+        roundTimes: this.room.roundTimes || {},
+        firstSolves: this.room.firstSolves || {},
+        correctSolutions: this.room.correctSolutions || {}
+      };
+      
+      // Update game statistics for both players
+      statisticsService.updateGameStats(
+        this.room,
+        winnerId,
+        loser.id,
+        gameStats
+      ).catch(err => console.error('Failed to update game statistics:', err));
+      
+      // Check for special achievements
+      this.checkSpecialAchievements(winnerId, loser.id, finalReason);
+      
+      // Update ELO ratings if this is a ranked game
+      if (this.room.isRanked) {
+        const ratingService = RatingService.getInstance();
+        
+        // Calculate match duration
+        const matchDuration = Math.floor((Date.now() - this.room.createdAt) / 1000);
+        const totalRounds = (this.room.scores[winnerId] || 0) + (this.room.scores[loser.id] || 0);
+        
+        ratingService.updateRatingsAfterMatch(
+          winnerId,
+          loser.id,
+          this.config.id as 'classic' | 'super' | 'extended',
+          {
+            duration: matchDuration,
+            roundsPlayed: totalRounds,
+            winnerRoundsWon: this.room.scores[winnerId] || 0,
+            loserRoundsWon: this.room.scores[loser.id] || 0
+          },
+          this.currentMatchId || undefined
+        ).then(async ({ winnerUpdate, loserUpdate, match }) => {
+          // Store rating updates for sending to clients
+          this.room.ratingUpdates = {
+            [winnerId]: winnerUpdate,
+            [loser.id]: loserUpdate
+          };
+          
+          // Record detailed match analytics
+          const analyticsService = MatchAnalyticsService.getInstance();
+          await analyticsService.recordMatchStatistics(
+            match.id,
+            this.room,
+            winnerId,
+            loser.id,
+            finalReason === 'forfeit'
+          );
+          
+          // Finalize replay with final game state
+          if (this.currentMatchId) {
+            const replayService = MatchReplayService.getInstance();
+            await replayService.finalizeMatchReplay(this.currentMatchId, {
+              finalScores: this.room.scores,
+              finalDecks: {
+                [this.room.players[0].id]: this.room.players[0].deck.length,
+                [this.room.players[1].id]: this.room.players[1].deck.length
+              },
+              totalRounds: this.room.currentRound,
+              gameEndReason: finalReason
+            });
+          }
+        }).catch(err => console.error('Failed to update ELO ratings:', err));
+      }
+    }
+    
     // Notify that game ended
     if (this.onGameOverCallback) {
       this.onGameOverCallback();
     }
+  }
+
+  /**
+   * Check for special achievements during the game
+   */
+  private checkSpecialAchievements(winnerId: string, loserId: string, reason: string): void {
+    // Check for comeback win (was down 0-5)
+    const winnerScore = this.room.scores[winnerId] || 0;
+    const loserScore = this.room.scores[loserId] || 0;
+    
+    // This is a simplified check - in a real implementation, you'd track the score history
+    // For now, we'll check if the winner had significantly fewer rounds won early
+    const winnerFirstSolves = this.room.firstSolves?.[winnerId] || 0;
+    const loserFirstSolves = this.room.firstSolves?.[loserId] || 0;
+    
+    // Check for flawless victory (10-0)
+    if (winnerScore === 10 && loserScore === 0) {
+      // This is already tracked in the statistics service
+    }
+    
+    // Track if all operations were used in any solution
+    // This would require analyzing the solution operations throughout the game
   }
 
   /**

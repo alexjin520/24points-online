@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGameState } from '../../hooks/useGameState';
 import { InteractiveCenterTable } from '../InteractiveCenterTable/InteractiveCenterTable';
-import { PlayerHand } from '../PlayerHand/PlayerHand';
-import { RoundResult } from '../RoundResult/RoundResult';
 import { GameOverEnhanced } from '../GameOver/GameOverEnhanced';
 import { CardTransfer } from '../CardTransfer/CardTransfer';
 import { SolutionReplay } from '../SolutionReplay/SolutionReplay';
 import { VictoryCelebration } from '../VictoryCelebration/VictoryCelebration';
 import DisconnectNotification from '../DisconnectNotification/DisconnectNotification';
 import { PuzzleRecords } from '../PuzzleRecords/PuzzleRecords';
+import { TugOfWar } from '../TugOfWar';
 import socketService from '../../services/socketService';
 import type { GameRoom, Solution, Card, Operation } from '../../types/game.types';
 import { GameState } from '../../types/game.types';
@@ -40,7 +39,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
     resetGame
   } = useGameState(playerId, room);
 
-  const [roundResult, setRoundResult] = useState<{
+  const [, setRoundResult] = useState<{
     winnerId: string | null;
     loserId: string | null;
     solution?: Solution;
@@ -58,7 +57,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
   const [gameOverReason, setGameOverReason] = useState<string | null>(null);
   const [gameOverWinnerId, setGameOverWinnerId] = useState<string | null>(null);
   const [opponentDisconnectedTime, setOpponentDisconnectedTime] = useState<number | null>(null);
-  const [showNewRecord, setShowNewRecord] = useState(false);
+  const [, setShowNewRecord] = useState(false);
+  const [currentSolveTime, setCurrentSolveTime] = useState<number | undefined>(undefined);
+  const [unlockedBadges, setUnlockedBadges] = useState<any[]>([]);
 
   // Get current player and opponent
   // For spectators, just show the first player as "current" and second as "opponent"
@@ -149,19 +150,31 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
 
   // Listen for solution results
   useEffect(() => {
-    const handleRoundEnded = (data: { winnerId: string; loserId: string; solution: Solution; correct: boolean; reason?: string }) => {
+    const handleRoundEnded = (data: { winnerId: string; loserId: string; solution: Solution; correct: boolean; reason?: string; solveTime?: number }) => {
       console.log('[GameScreen] Round ended:', {
         winnerId: data.winnerId,
         loserId: data.loserId,
         myPlayerId: playerId,
         amIWinner: data.winnerId === playerId,
         amILoser: data.loserId === playerId,
-        correct: data.correct
+        correct: data.correct,
+        solveTime: data.solveTime
       });
+      
+      // Store solve time for the round
+      if (data.solveTime) {
+        setCurrentSolveTime(data.solveTime);
+        console.log('[GameScreen] Solve time stored:', data.solveTime);
+      }
       
       // Show victory celebration for correct solutions
       if (data.correct && data.winnerId) {
         const winnerName = data.winnerId === playerId ? currentPlayer?.name : opponent?.name;
+        console.log('[GameScreen] SETTING VICTORY CELEBRATION:', {
+          winnerName,
+          data,
+          timestamp: new Date().toISOString()
+        });
         if (winnerName) {
           setShowVictoryCelebration(winnerName);
         }
@@ -252,6 +265,20 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
     };
   }, [playerId]);
 
+  // Listen for badge unlocks
+  useEffect(() => {
+    const handleBadgesUnlocked = (badges: any[]) => {
+      console.log('[GameScreen] Badges unlocked:', badges);
+      setUnlockedBadges(badges);
+    };
+
+    socketService.on('badges-unlocked', handleBadgesUnlocked);
+
+    return () => {
+      socketService.off('badges-unlocked', handleBadgesUnlocked);
+    };
+  }, []);
+
   // Listen for game over events
   useEffect(() => {
     const handleGameOver = (data: { winnerId: string; reason?: string }) => {
@@ -281,6 +308,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
 
   // Handle new record notification
   useEffect(() => {
+    console.log('[GameScreen] NEW RECORD CHECK:', {
+      newRecordSet: gameState?.newRecordSet,
+      state: gameState?.state,
+      isRoundEnd: gameState?.state === GameState.ROUND_END,
+      timestamp: new Date().toISOString()
+    });
     if (gameState?.newRecordSet && gameState?.state === GameState.ROUND_END) {
       setShowNewRecord(true);
       // Clear after 3 seconds
@@ -292,6 +325,22 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
       setShowNewRecord(false);
     }
   }, [gameState?.newRecordSet, gameState?.state]);
+
+  // Clear solve time when new round starts
+  useEffect(() => {
+    if (gameState?.state === GameState.PLAYING) {
+      setCurrentSolveTime(undefined);
+    }
+  }, [gameState?.state]);
+
+
+  // Debug showVictoryCelebration changes
+  useEffect(() => {
+    console.log('[GameScreen] SHOW_VICTORY_CELEBRATION CHANGED:', {
+      showVictoryCelebration,
+      timestamp: new Date().toISOString()
+    });
+  }, [showVictoryCelebration]);
 
   // For spectators, we need to wait for game state but not for player matching
   if (!gameState || (!isSpectator && (!currentPlayer || !opponent))) {
@@ -337,20 +386,43 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
         </button>
       </div>
 
-      {/* Opponent Area */}
-      <div className="opponent-area">
-        {opponent && (
-          <PlayerHand 
-            player={opponent} 
-            isCurrentPlayer={false}
-            isDisconnected={!!opponentDisconnectedTime}
-            roomType={room.roomType}
+      {/* Compact Score Display */}
+      {gameState && (
+        <div className="score-container">
+          <div className="compact-scores">
+            <div className="score-item current">
+              <span className="score-name">{currentPlayer?.name || 'You'}</span>
+              <span className="score-value">{currentPlayer?.points || 0}</span>
+            </div>
+            <div className="score-separator">-</div>
+            <div className={`score-item opponent ${opponentDisconnectedTime ? 'disconnected' : ''}`}>
+              <span className="score-value">{opponent?.points || 0}</span>
+              <span className="score-name">
+                {opponentDisconnectedTime && <span className="disconnect-indicator">⚠ </span>}
+                {opponent?.name || 'Opponent'}
+              </span>
+            </div>
+          </div>
+          <div className="win-condition">
+            {t(`gameScreen.winConditions.${room.roomType || 'classic'}`)}
+          </div>
+          {/* Tug of War Animation */}
+          <TugOfWar
+            leftScore={currentPlayer?.points || 0}
+            rightScore={opponent?.points || 0}
+            leftName={currentPlayer?.name}
+            rightName={opponent?.name}
+            isCurrentPlayerLeft={!isSpectator}
+            leftIsBot={currentPlayer?.isAI ?? false}
+            rightIsBot={opponent?.isAI ?? false}
           />
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Game Board */}
-      <div className="game-board">
+      {/* Main Game Content */}
+      <div className="game-content">
+        {/* Game Board */}
+        <div className="game-board">
         {/* Center Table */}
         <div className="center-area">
           {/* Puzzle Records */}
@@ -361,11 +433,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
               hasPuzzleStats: !!gameState?.currentPuzzleStats,
               puzzleStats: gameState?.currentPuzzleStats
             });
-            return gameState?.state === GameState.PLAYING && gameState?.currentPuzzleStats && (
+            return gameState?.state === GameState.PLAYING && gameState?.currentPuzzleStats && !showVictoryCelebration && (
               <PuzzleRecords
                 occurrenceCount={gameState.currentPuzzleStats.occurrenceCount}
                 bestRecord={gameState.currentPuzzleStats.bestRecord}
-                showNewRecord={showNewRecord}
               />
             );
           })()}
@@ -387,38 +458,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
         </div>
       </div>
 
-      {/* Current Player Area */}
-      <div className="player-area">
-        {currentPlayer && (
-          <PlayerHand 
-            player={currentPlayer} 
-            isCurrentPlayer={true}
-            roomType={room.roomType}
-          />
-        )}
       </div>
 
 
-      {/* Round Result Modal */}
-      {roundResult && gameState.state === GameState.ROUND_END && !showingSolutionReplay && (
-        <RoundResult
-          winnerId={roundResult.winnerId}
-          winnerName={isSpectator 
-            ? (gameState.players.find(p => p.id === roundResult.winnerId)?.name || 'Winner')
-            : (roundResult.winnerId === playerId ? (currentPlayer?.name || 'Player') : (opponent?.name || 'Opponent'))}
-          loserId={roundResult.loserId}
-          loserName={isSpectator
-            ? (gameState.players.find(p => p.id === roundResult.loserId)?.name || 'Loser')
-            : (roundResult.loserId === playerId ? (currentPlayer?.name || 'Player') : (opponent?.name || 'Opponent'))}
-          solution={roundResult.solution}
-          reason={roundResult.reason}
-          onContinue={() => setRoundResult(null)}
-          hideForReplay={showingSolutionReplay}
-        />
-      )}
-
-      {/* Solution Replay */}
-      {showingSolutionReplay && replaySolution && (
+      {/* Solution Replay - skip in solo practice */}
+      {showingSolutionReplay && replaySolution && !gameState?.isSoloPractice && (
         <SolutionReplay
           solution={replaySolution}
           onComplete={() => {
@@ -449,12 +493,30 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
       )}
 
       {/* Victory Celebration */}
-      {showVictoryCelebration && (
-        <VictoryCelebration
-          playerName={showVictoryCelebration}
-          onComplete={() => setShowVictoryCelebration(null)}
-        />
-      )}
+      {showVictoryCelebration && (() => {
+        console.log('[GameScreen] Victory Celebration Props:', {
+          playerName: showVictoryCelebration,
+          currentSolveTime,
+          gameStateNewRecordSet: gameState?.newRecordSet,
+          puzzleStats: gameState?.currentPuzzleStats,
+          previousRecord: gameState?.currentPuzzleStats?.bestRecord,
+          timestamp: new Date().toISOString()
+        });
+        return (
+          <VictoryCelebration
+            playerName={showVictoryCelebration}
+            onComplete={() => setShowVictoryCelebration(null)}
+            isFirstSolve={gameState?.currentPuzzleStats && 
+              (gameState.currentPuzzleStats.occurrenceCount <= 1 || !gameState.currentPuzzleStats.bestRecord)}
+            solveTime={currentSolveTime}
+            isNewRecord={gameState?.newRecordSet || 
+              (!!currentSolveTime && gameState?.currentPuzzleStats && 
+                (!gameState.currentPuzzleStats.bestRecord || 
+                 currentSolveTime < gameState.currentPuzzleStats.bestRecord.timeSeconds))}
+            previousRecord={gameState?.currentPuzzleStats?.bestRecord}
+          />
+        );
+      })()}
 
       {/* Game Over Modal */}
       {gameState.state === GameState.GAME_OVER && (
@@ -466,6 +528,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ room, playerId, onLeaveG
           gameOverReason={gameOverReason}
           gameOverWinnerId={gameOverWinnerId}
           isSpectator={isSpectator}
+          unlockedBadges={unlockedBadges}
         />
       )}
 

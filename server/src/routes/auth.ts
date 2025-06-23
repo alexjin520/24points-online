@@ -115,4 +115,64 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
   }
 });
 
+// Check username availability endpoint
+router.get('/check-username/:username', async (req: Request, res: Response) => {
+  try {
+    const { username } = req.params;
+    
+    // Validate username format - allow 2-20 characters
+    if (!username || !/^[a-zA-Z0-9_-]{2,20}$/.test(username)) {
+      return res.json({ 
+        available: false, 
+        reason: 'invalid_format' 
+      });
+    }
+    
+    const existingUser = await authService.checkUsernameAvailability(username);
+    
+    res.json({ 
+      available: !existingUser,
+      reason: existingUser ? 'already_taken' : null
+    });
+  } catch (error) {
+    console.error('Check username error:', error);
+    res.status(500).json({ error: 'Failed to check username' });
+  }
+});
+
+// Refresh token endpoint
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'No refresh token provided' });
+    }
+
+    // Get client info
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.get('user-agent') || 'unknown';
+
+    // Refresh the tokens
+    const result = await authService.refreshTokens(refreshToken, ipAddress, userAgent);
+
+    // Set new refresh token as httpOnly cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Return new access token and user info
+    res.json({
+      accessToken: result.accessToken,
+      user: result.user
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401).json({ error: error instanceof Error ? error.message : 'Token refresh failed' });
+  }
+});
+
 export default router;

@@ -4,6 +4,8 @@ import { DeckManager } from '../game/DeckManager';
 import { GameStateManager, GameEvent, RoundResult } from '../game/GameStateManager';
 import { getRoomTypeConfig } from '../config/roomTypes';
 import { RoomCreationOptions } from '../types/roomTypes';
+import { badgeDetectionService } from '../badges/BadgeDetectionService';
+import { statisticsService } from '../badges/StatisticsService';
 
 export class RoomManager {
   private rooms: Map<string, GameRoom> = new Map();
@@ -21,35 +23,71 @@ export class RoomManager {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 
-  createRoom(playerId: string, socketId: string, playerName: string, roomType: string = 'classic', isSoloPractice: boolean = false): GameRoom {
+  createRoom(roomIdOrPlayerId: string, socketIdOrRoomType?: string, playerNameOrIsRanked?: string | boolean, roomType: string = 'classic', isSoloPractice: boolean = false): GameRoom {
+    // Handle overloaded parameters
+    let roomId: string;
+    let playerId: string;
+    let socketId: string;
+    let playerName: string;
+    let isRanked: boolean = false;
+
+    // Check if this is being called from matchmaking (3 params: roomId, roomType, isRanked)
+    if (typeof playerNameOrIsRanked === 'boolean' && socketIdOrRoomType && arguments.length === 3) {
+      console.log('[RoomManager] Creating room from matchmaking:', { providedRoomId: roomIdOrPlayerId, roomType: socketIdOrRoomType, isRanked: playerNameOrIsRanked });
+      roomId = roomIdOrPlayerId;
+      roomType = socketIdOrRoomType;
+      isRanked = playerNameOrIsRanked;
+      // For matchmaking, players will be added later
+      playerId = '';
+      socketId = '';
+      playerName = '';
+    } else {
+      // Original signature (5 params: playerId, socketId, playerName, roomType, isSoloPractice)
+      roomId = this.generateRoomId();
+      playerId = roomIdOrPlayerId;
+      socketId = socketIdOrRoomType || '';
+      playerName = playerNameOrIsRanked as string || '';
+    }
     const config = getRoomTypeConfig(roomType);
     if (!config) {
       throw new Error(`Invalid room type: ${roomType}`);
     }
 
-    const roomId = this.generateRoomId();
-    const player: Player = {
-      id: playerId,
-      socketId,
-      name: playerName,
-      deck: [],
-      isReady: false
-    };
-
     const room: GameRoom = {
       id: roomId,
-      players: [player],
+      players: [],
       state: GameState.WAITING,
       centerCards: [],
       currentRound: 0,
-      scores: {
-        [playerId]: 0
-      },
+      scores: {},
       roomType,
-      isSoloPractice
+      isSoloPractice,
+      isRanked,
+      createdAt: Date.now(),
+      // Initialize battle statistics
+      roundTimes: {},
+      firstSolves: {},
+      correctSolutions: {}
     };
 
+    // Add initial player if provided (not from matchmaking)
+    if (playerId && socketId && playerName) {
+      const player: Player = {
+        id: playerId,
+        socketId,
+        name: playerName,
+        deck: [],
+        isReady: false
+      };
+      room.players.push(player);
+      room.scores[playerId] = 0;
+      room.roundTimes![playerId] = [];
+      room.firstSolves![playerId] = 0;
+      room.correctSolutions![playerId] = 0;
+    }
+
     this.rooms.set(roomId, room);
+    console.log('[RoomManager] Room created and stored:', { roomId, totalRooms: this.rooms.size, isRanked });
     
     // Create appropriate game manager based on room type
     const GameManagerClass = this.getGameManagerClass(roomType);
@@ -80,7 +118,11 @@ export class RoomManager {
     });
     
     this.gameManagers.set(roomId, gameManager);
-    this.playerToRoom.set(socketId, roomId);
+    
+    // Only set playerToRoom if we have a socketId
+    if (socketId) {
+      this.playerToRoom.set(socketId, roomId);
+    }
     
     return room;
   }
@@ -134,11 +176,18 @@ export class RoomManager {
       socketId,
       name: playerName,
       deck: [],
-      isReady: false
+      isReady: false,
+      isAI: playerName === 'Practice Bot' // Mark AI players
     };
 
     room.players.push(player);
     room.scores[playerId] = 0;
+    
+    // Initialize battle statistics for new player
+    if (room.roundTimes) room.roundTimes[playerId] = [];
+    if (room.firstSolves) room.firstSolves[playerId] = 0;
+    if (room.correctSolutions) room.correctSolutions[playerId] = 0;
+    
     this.playerToRoom.set(socketId, roomId);
 
     // Don't change state here - wait for players to be ready
@@ -237,6 +286,10 @@ export class RoomManager {
 
   getAllRooms(): GameRoom[] {
     return Array.from(this.rooms.values());
+  }
+
+  getGameManager(roomId: string): GameStateManager | undefined {
+    return this.gameManagers.get(roomId);
   }
 
   getOpenRooms(): GameRoom[] {
@@ -529,6 +582,42 @@ export class RoomManager {
       
       this.io.to(roomId).emit('game-over', gameOverData);
       this.io!.to(spectatorRoomId).emit('game-over', gameOverData);
+      
+      // Check for badges after game ends
+      const room = this.rooms.get(roomId);
+      if (room) {
+        this.checkBadgesAfterGame(room, gameState, gameOverResult);
+      }
+    }
+  }
+  
+  private async checkBadgesAfterGame(room: GameRoom, gameState: any, gameOverResult: any) {
+    console.log('[RoomManager] Checking badges after game for room:', room.id);
+    
+    const players = gameState.players;
+    
+    // In solo practice, only check badges for the human player
+    const playersToCheck = room.isSoloPractice 
+      ? players.filter((p: any) => !p.isAI)
+      : players;
+    
+    for (const player of playersToCheck) {
+      try {
+        // Initialize stats if needed
+        await statisticsService.initializeUserStats(player.id, player.name);
+        
+        // Check for new badges
+        console.log(`[RoomManager] Checking badges for player ${player.name} (${player.id})`);
+        const newBadges = await badgeDetectionService.checkBadgesAfterGame(player.id);
+        
+        // Notify player of new badges
+        if (newBadges.length > 0) {
+          console.log(`[RoomManager] Player ${player.name} unlocked ${newBadges.length} badges!`);
+          this.io!.to(player.socketId).emit('badges-unlocked', newBadges);
+        }
+      } catch (error) {
+        console.error(`[RoomManager] Error checking badges for player ${player.id}:`, error);
+      }
     }
   }
 

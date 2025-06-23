@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authService } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import './SignInForm.css';
 
 interface SignInFormProps {
@@ -10,6 +10,7 @@ interface SignInFormProps {
 
 export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSignUp }) => {
   const { t } = useTranslation();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -58,19 +59,15 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
     setErrors({});
 
     try {
-      const user = await authService.login({ 
-        email: formData.email, 
-        password: formData.password 
-      });
+      await login(formData.email, formData.password);
       
       if (formData.rememberMe) {
-        // The auth service already handles token persistence
         localStorage.setItem('rememberMe', 'true');
       } else {
         localStorage.removeItem('rememberMe');
       }
       
-      onSuccess(user);
+      onSuccess(true);
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.response?.status === 401) {
@@ -93,7 +90,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
 
   return (
     <form className="signin-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-      <h2 className="form-title">{t('auth.signIn')}</h2>
+      <h2 className="form-title">{t('auth.signIn.title')}</h2>
       
       {errors.general && (
         <div className="form-error-banner">
@@ -103,7 +100,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
 
       <div className="form-group">
         <label htmlFor="email" className="form-label">
-          {t('auth.email')}
+          {t('auth.signIn.email')}
         </label>
         <input
           type="email"
@@ -112,7 +109,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
           className={`form-input ${errors.email ? 'form-input-error' : ''}`}
           value={formData.email}
           onChange={handleChange}
-          placeholder={t('auth.emailPlaceholder')}
+          placeholder={t('auth.signIn.emailPlaceholder')}
           disabled={isLoading}
           autoFocus
           autoComplete="email"
@@ -124,7 +121,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
 
       <div className="form-group">
         <label htmlFor="password" className="form-label">
-          {t('auth.password')}
+          {t('auth.signIn.password')}
         </label>
         <input
           type="password"
@@ -133,7 +130,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
           className={`form-input ${errors.password ? 'form-input-error' : ''}`}
           value={formData.password}
           onChange={handleChange}
-          placeholder={t('auth.passwordPlaceholder')}
+          placeholder={t('auth.signIn.passwordPlaceholder')}
           disabled={isLoading}
           autoComplete="current-password"
         />
@@ -151,10 +148,10 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
             onChange={handleChange}
             disabled={isLoading}
           />
-          <span>{t('auth.rememberMe')}</span>
+          <span>{t('auth.signIn.rememberMe')}</span>
         </label>
         <a href="#" className="form-link" onClick={(e) => e.preventDefault()}>
-          {t('auth.forgotPassword')}
+          {t('auth.signIn.forgotPassword')}
         </a>
       </div>
 
@@ -163,18 +160,18 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess, onSwitchToSig
         className="form-submit btn btn-primary"
         disabled={isLoading}
       >
-        {isLoading ? t('auth.signingIn') : t('auth.signIn')}
+        {isLoading ? t('auth.signIn.signingIn') : t('auth.signIn.submit')}
       </button>
 
       <div className="form-footer">
-        <span>{t('auth.noAccount')}</span>
+        <span>{t('auth.signIn.noAccount')}</span>
         <button
           type="button"
           className="form-link-button"
           onClick={onSwitchToSignUp}
           disabled={isLoading}
         >
-          {t('auth.signUp')}
+          {t('auth.tabs.signUp')}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authService } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
+import { guestService } from '../../services/guestService';
 import './SignUpForm.css';
 
 interface SignUpFormProps {
@@ -10,6 +11,7 @@ interface SignUpFormProps {
 
 export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSignIn }) => {
   const { t } = useTranslation();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -19,12 +21,23 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showUsernameHint, setShowUsernameHint] = useState(false);
+
+  // Pre-fill username from guest service
+  useEffect(() => {
+    const guestUsername = guestService.getGuestUsername();
+    if (guestUsername) {
+      setFormData(prev => ({ ...prev, username: guestUsername }));
+      setShowUsernameHint(true);
+    }
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (formData.username.length < 3) {
-      newErrors.username = t('auth.signUp.errors.usernameMin', 'Username must be at least 3 characters');
+    // Remove minimum length check - allow any length username
+    if (formData.username.length === 0) {
+      newErrors.username = t('auth.signUp.errors.usernameRequired', 'Username is required');
     }
 
     if (formData.username.length > 20) {
@@ -74,12 +87,13 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
     setIsLoading(true);
 
     try {
-      const user = await authService.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
-      onSuccess(user);
+      await register(
+        formData.username,
+        formData.email,
+        formData.password,
+        formData.confirmPassword
+      );
+      onSuccess(true);
     } catch (err) {
       setErrors({ 
         general: err instanceof Error ? err.message : 'Registration failed' 
@@ -118,6 +132,11 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess, onSwitchToSig
         />
         {errors.username && (
           <span className="field-error">{errors.username}</span>
+        )}
+        {showUsernameHint && !errors.username && (
+          <span className="field-hint" style={{ color: '#4CAF50', fontSize: '0.85em', marginTop: '4px', display: 'block' }}>
+            {t('auth.signUp.usernameHint', 'Great! You can claim your guest username "{{username}}"', { username: formData.username })}
+          </span>
         )}
       </div>
 

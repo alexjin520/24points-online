@@ -12,6 +12,7 @@ interface GameOverEnhancedProps {
   gameOverReason?: string | null;
   gameOverWinnerId?: string | null;
   isSpectator?: boolean;
+  unlockedBadges?: any[];
 }
 
 interface DetailedStats {
@@ -34,13 +35,15 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
   onLeaveGame,
   gameOverReason,
   gameOverWinnerId,
-  isSpectator = false
+  isSpectator = false,
+  unlockedBadges = []
 }) => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [shareData, setShareData] = useState<ShareableGameData | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [showRatingAnimation, setShowRatingAnimation] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // For spectators, determine the winner and show their stats
@@ -72,7 +75,7 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
     playerScore = gameState.scores[playerId] || 0;
     opponentScore = opponent ? (gameState.scores[opponent.id] || 0) : 0;
     // Use gameOverWinnerId if provided (for forfeit cases), otherwise use deck length
-    isWinner = gameOverWinnerId ? gameOverWinnerId === playerId : (currentPlayer?.deck.length === 0 || opponent?.deck.length === 20);
+    isWinner = gameOverWinnerId ? gameOverWinnerId === playerId : ((currentPlayer?.points || 0) >= 4);
   }
 
   // Calculate detailed statistics
@@ -222,13 +225,18 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
     // Animate in
     setTimeout(() => setIsVisible(true), 100);
     setTimeout(() => setShowStats(true), 800);
-  }, []);
+    // Show rating animation after stats
+    if (gameState.isRanked && gameState.rankedData?.ratingChanges) {
+      setTimeout(() => setShowRatingAnimation(true), 1200);
+    }
+  }, [gameState.isRanked, gameState.rankedData]);
 
 
   const stats = getDetailedStats();
 
-  const formatTime = (seconds: number) => {
-    if (seconds === 0) return t('gameOver.labels.na');
+  const formatTime = (milliseconds: number) => {
+    if (milliseconds === 0) return t('gameOver.labels.na');
+    const seconds = (milliseconds / 1000).toFixed(1);
     return t('gameOver.labels.seconds', { seconds });
   };
 
@@ -324,6 +332,71 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
           </p>
         </div>
 
+        {/* Ranked Rating Changes - Show prominently at the top */}
+        {gameState.isRanked && gameState.rankedData && gameState.rankedData.ratingChanges && (
+          <div className={`ranked-rating-section ${showRatingAnimation ? 'animate' : ''}`}>
+            <div className="rating-change-container">
+              {/* Player Rating Change */}
+              <div className={`rating-change-card ${isWinner ? 'winner' : 'loser'}`}>
+                <div className="player-rating-info">
+                  <span className="player-label">{currentPlayer?.name || t('gameOver.labels.you')}</span>
+                  <div className="rating-display">
+                    <span className="old-rating">
+                      {currentPlayer?.id === gameState.players[0].id 
+                        ? gameState.rankedData.player1Rating 
+                        : gameState.rankedData.player2Rating}
+                    </span>
+                    <span className="rating-arrow">→</span>
+                    <span className="new-rating">
+                      {(currentPlayer?.id === gameState.players[0].id 
+                        ? gameState.rankedData.player1Rating 
+                        : gameState.rankedData.player2Rating) + 
+                        (gameState.rankedData.ratingChanges[currentPlayer?.id || playerId] || 0)}
+                    </span>
+                  </div>
+                  <div className={`rating-delta ${isWinner ? 'positive' : 'negative'}`}>
+                    <span className="delta-sign">{isWinner ? '+' : ''}</span>
+                    <span className="delta-value">
+                      {Math.abs(gameState.rankedData.ratingChanges[currentPlayer?.id || playerId] || 0)}
+                    </span>
+                    <span className="delta-label">ELO</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Opponent Rating Change */}
+              {opponent && !isSpectator && (
+                <div className={`rating-change-card ${!isWinner ? 'winner' : 'loser'}`}>
+                  <div className="player-rating-info">
+                    <span className="player-label">{opponent.name}</span>
+                    <div className="rating-display">
+                      <span className="old-rating">
+                        {opponent.id === gameState.players[0].id 
+                          ? gameState.rankedData.player1Rating 
+                          : gameState.rankedData.player2Rating}
+                      </span>
+                      <span className="rating-arrow">→</span>
+                      <span className="new-rating">
+                        {(opponent.id === gameState.players[0].id 
+                          ? gameState.rankedData.player1Rating 
+                          : gameState.rankedData.player2Rating) + 
+                          (gameState.rankedData.ratingChanges[opponent.id] || 0)}
+                      </span>
+                    </div>
+                    <div className={`rating-delta ${!isWinner ? 'positive' : 'negative'}`}>
+                      <span className="delta-sign">{!isWinner ? '+' : ''}</span>
+                      <span className="delta-value">
+                        {Math.abs(gameState.rankedData.ratingChanges[opponent.id] || 0)}
+                      </span>
+                      <span className="delta-label">ELO</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Battle Report */}
         <div className={`battle-report ${showStats ? 'show' : ''}`}>
           <h2>{t('gameOver.battleReport')}</h2>
@@ -416,7 +489,7 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
           <div className="achievements">
             <h3>{t('gameOver.matchAchievements')}</h3>
             <div className="achievement-list">
-              {stats.avgSolveTime < 10 && stats.avgSolveTime > 0 && (
+              {stats.avgSolveTime < 10000 && stats.avgSolveTime > 0 && (
                 <div className="achievement-badge speed">
                   <span className="badge-icon" role="img" aria-label="Lightning bolt">⚡</span>
                   <span className="badge-text">{t('gameOver.achievements.speedDemon')}</span>
@@ -442,6 +515,32 @@ export const GameOverEnhanced: React.FC<GameOverEnhancedProps> = ({
               )}
             </div>
           </div>
+
+          {/* Unlocked Badges */}
+          {unlockedBadges.length > 0 && (
+            <div className="unlocked-badges">
+              <h3>{t('gameOver.unlockedBadges')}</h3>
+              <div className="badge-list">
+                {unlockedBadges.map((unlock, index) => (
+                  <div key={index} className="unlocked-badge">
+                    <div className={`badge-icon tier-${unlock.badge.tier || 'none'}`}>
+                      {unlock.badge.tier === 'bronze' && '🥉'}
+                      {unlock.badge.tier === 'silver' && '🥈'}
+                      {unlock.badge.tier === 'gold' && '🥇'}
+                      {unlock.badge.tier === 'platinum' && '💎'}
+                      {unlock.badge.tier === 'diamond' && '💠'}
+                      {!unlock.badge.tier && '🏆'}
+                    </div>
+                    <div className="badge-info">
+                      <span className="badge-name">{unlock.badge.name}</span>
+                      <span className="badge-description">{unlock.badge.description}</span>
+                      <span className="badge-points">+{unlock.badge.points} pts</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

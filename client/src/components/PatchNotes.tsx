@@ -13,6 +13,113 @@ interface PatchNote {
 
 const patchNotes: PatchNote[] = [
   {
+    date: '2025-06-23',
+    version: '3.1.0',
+    changes: [
+      { type: 'feature', description: '🎮 Unified Scoring System - All game modes now use the 4-point tug-of-war mechanics!' },
+      { type: 'feature', description: '🪢 NEW: Tug-of-War Animation - Visual scoreboard showing the point battle in real-time' },
+      { type: 'feature', description: 'Consistent scoring across all modes: Classic, Super, and Extended now play to 4 points' },
+      { type: 'feature', description: 'Strategic tug-of-war gameplay: Pull opponent to 0 before gaining points' },
+      { type: 'fix', description: 'Fixed score display showing round wins instead of actual points' },
+      { type: 'fix', description: 'Corrected impossible score combinations (like 2:1) from appearing' },
+      { type: 'performance', description: 'Simplified scoring logic for better performance and consistency' }
+    ]
+  },
+  {
+    date: '2025-06-22',
+    version: '3.0.0',
+    changes: [
+      { type: 'feature', description: '🎯 NEW: ELO Ranking System - Climb from Iron to Grandmaster with skill-based matchmaking!' },
+      { type: 'feature', description: 'Automated Ranked Matchmaking - Find opponents at your skill level automatically' },
+      { type: 'feature', description: '8 Competitive Tiers: Iron → Bronze → Silver → Gold → Platinum → Diamond → Master → Grandmaster' },
+      { type: 'feature', description: 'Global and Regional Leaderboards - See how you rank against players worldwide' },
+      { type: 'feature', description: 'Match History & Replay System - Review and learn from your ranked games' },
+      { type: 'feature', description: 'Badge Tooltips - View badge requirements by hovering in waiting room' },
+      { type: 'fix', description: 'Fixed connection status display synchronization issues' },
+      { type: 'fix', description: 'Resolved ranked matchmaking authentication problems' },
+      { type: 'fix', description: 'Fixed React StrictMode compatibility for better stability' },
+      { type: 'fix', description: 'Fixed ELO database schema foreign key constraints' },
+      { type: 'fix', description: 'Socket reconnection after login now properly updates auth state' },
+      { type: 'performance', description: 'Optimized matchmaking algorithm with progressive search expansion' },
+      { type: 'performance', description: 'Improved badge system performance with local implementations' }
+    ]
+  },
+  {
+    date: '2025-01-23',
+    version: '2.0.2',
+    changes: [
+      { type: 'fix', description: 'Fixed authentication API URL issue preventing signup/login on production' },
+      { type: 'fix', description: 'Resolved double-slash URL bug (//api/auth/register) in server endpoints' },
+      { type: 'fix', description: 'Added robust trailing slash handling for all API and WebSocket connections' }
+    ]
+  },
+  {
+    date: '2025-01-22',
+    version: '2.0.1',
+    changes: [
+      { type: 'feature', description: 'Automatic JWT token refresh - Stay logged in without interruption' },
+      { type: 'fix', description: 'Fixed JWT expiration errors causing "invalid credentials" messages' },
+      { type: 'fix', description: 'Improved authentication token handling for better stability' },
+      { type: 'performance', description: 'Increased session duration from 15 minutes to 1 hour' }
+    ]
+  },
+  {
+    date: '2025-01-22',
+    version: '2.0.0',
+    changes: [
+      { type: 'feature', description: '🏆 NEW: Achievement & Badge System - Collect 50+ unique badges across multiple categories!' },
+      { type: 'feature', description: 'Badge Gallery - View all available badges and track your collection progress' },
+      { type: 'feature', description: 'Profile Badge Showcase - Display your favorite badges on your profile' },
+      { type: 'feature', description: 'Real-time Badge Notifications - Get instant alerts when unlocking new achievements' },
+      { type: 'feature', description: 'User Authentication - Create an account to save your progress and achievements' },
+      { type: 'feature', description: 'Guest Username Protection - Reserve your username even as a guest player' },
+      { type: 'feature', description: 'Elegant Card Redesign - New minimalist card design with improved performance' },
+      { type: 'feature', description: 'Enhanced Victory Celebrations - Win screen now displays new records and achievements' },
+      { type: 'fix', description: 'Fixed 2-character username registration validation' },
+      { type: 'fix', description: 'Resolved TypeScript compilation errors in badge system' },
+      { type: 'fix', description: 'Improved player disconnection handling' },
+      { type: 'performance', description: 'Optimized badge system with local implementations' },
+      { type: 'performance', description: 'Enhanced WebSocket connection stability' }
+    ]
+  },
+  {
+    date: '2025-01-21',
+    version: '1.4.4',
+    changes: [
+      { type: 'fix', description: 'Fixed Extended Range mode scoring bug - now correctly awards 1 point per win instead of fractional points' },
+      { type: 'feature', description: 'Added disconnection indicator to scoreboard - shows warning icon when opponent disconnects' }
+    ]
+  },
+  {
+    date: '2025-01-21',
+    version: '1.4.3',
+    changes: [
+      { type: 'feature', description: 'Victory banner now shows new record information when players set or beat records' },
+      { type: 'feature', description: 'Redesigned cards with cleaner, more elegant appearance - removed shadows and simplified design' },
+      { type: 'fix', description: 'Removed blue popup overlay that briefly appeared during round transitions' },
+      { type: 'fix', description: 'Fixed solo practice mode to skip solution replay entirely for smoother gameplay' },
+      { type: 'fix', description: 'Victory celebration now maintains record information for its full duration' },
+      { type: 'fix', description: 'Removed spinning animations when cards are dealt - now using smooth fade-in' },
+      { type: 'fix', description: 'Removed P1/P2 labels from cards for cleaner look' },
+      { type: 'performance', description: 'Reduced victory celebration duration to 2 seconds for faster gameplay' },
+      { type: 'performance', description: 'Made all card animations 25-50% faster for more competitive gameplay' },
+      { type: 'performance', description: 'Reduced card size by 10% for better layout on smaller screens' }
+    ]
+  },
+  {
+    date: '2025-01-20',
+    version: '1.4.2',
+    changes: [
+      { type: 'feature', description: 'Enhanced puzzle records display - now shows fastest solver and their time' },
+      { type: 'feature', description: 'Added first-solve celebration in victory banner' },
+      { type: 'feature', description: 'Improved mobile UI with cleaner layout and better touch targets' },
+      { type: 'fix', description: 'Fixed solve time tracking and display in round results' },
+      { type: 'fix', description: 'Fixed puzzle records not showing for solving state in solo practice' },
+      { type: 'fix', description: 'Improved card number visibility with darker background colors' },
+      { type: 'performance', description: 'Sped up round end banner animations for better flow' }
+    ]
+  },
+  {
     date: '2025-01-19',
     version: '1.4.1',
     changes: [

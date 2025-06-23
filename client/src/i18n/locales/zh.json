@@ -23,8 +23,289 @@
       "puzzles": "记录",
       "learn": "学习",
       "leaderboard": "排行榜",
+      "badges": "徽章",
       "signIn": "登录",
       "signUp": "注册"
+    }
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "close": "关闭",
+    "confirm": "确认",
+    "delete": "删除",
+    "edit": "编辑",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功"
+  },
+  "badges": {
+    "loading": "加载徽章中...",
+    "gallery": {
+      "title": "徽章收藏",
+      "noBadgesFound": "没有找到符合条件的徽章"
+    },
+    "level": "等级",
+    "points": "点数",
+    "filter": {
+      "searchPlaceholder": "搜索徽章...",
+      "showEarnedOnly": "仅显示已获得的徽章"
+    },
+    "categories": {
+      "all": "全部",
+      "skill": "技能",
+      "progression": "进度",
+      "mode": "游戏模式",
+      "social": "社交",
+      "unique": "独特",
+      "seasonal": "季节"
+    },
+    "rarity": {
+      "common": "普通",
+      "rare": "稀有",
+      "epic": "史诗",
+      "legendary": "传奇"
+    },
+    "detail": {
+      "earned": "您已获得此徽章！",
+      "progress": "进度",
+      "progressText": "{{current}} / {{target}}",
+      "requirements": "要求",
+      "category": "类别",
+      "tierProgression": "等级进程"
+    },
+    "notification": {
+      "unlocked": "徽章解锁！",
+      "viewDetails": "查看详情",
+      "tierUpgrade": "从{{from}}升级到{{to}}"
+    },
+    "pointsToNextLevel": "距离下一级还需{{points}}积分",
+    "milestoneAchieved": "达到{{level}}级里程碑！",
+    "levelUp": {
+      "title": "升级了！",
+      "message": "恭喜！您已达到{{level}}级！",
+      "unlockRareBadges": "解锁稀有徽章！",
+      "profileCustomization": "解锁个人资料自定义！",
+      "unlockEpicBadges": "解锁史诗徽章！",
+      "unlockLegendaryBadges": "解锁传奇徽章！"
+    },
+    "authRequired": {
+      "title": "需要登录",
+      "message": "您需要登录才能查看和跟踪您的徽章收藏。创建一个账户开始赚取徽章！"
+    },
+    "definitions": {
+      "speed_demon_bronze": {
+        "name": "极速恶魔 铜牌",
+        "description": "在10秒内解决一个谜题"
+      },
+      "speed_demon_silver": {
+        "name": "极速恶魔 银牌",
+        "description": "在7秒内解决一个谜题"
+      },
+      "speed_demon_gold": {
+        "name": "极速恶魔 金牌",
+        "description": "在5秒内解决一个谜题"
+      },
+      "speed_demon_platinum": {
+        "name": "极速恶魔 白金",
+        "description": "在4秒内解决一个谜题"
+      },
+      "speed_demon_diamond": {
+        "name": "极速恶魔 钻石",
+        "description": "在3秒内解决一个谜题"
+      },
+      "lightning_reflexes_bronze": {
+        "name": "闪电反应 铜牌",
+        "description": "在10回合中首先解决"
+      },
+      "lightning_reflexes_silver": {
+        "name": "闪电反应 银牌",
+        "description": "在25回合中首先解决"
+      },
+      "lightning_reflexes_gold": {
+        "name": "闪电反应 金牌",
+        "description": "在50回合中首先解决"
+      },
+      "lightning_reflexes_platinum": {
+        "name": "闪电反应 白金",
+        "description": "在100回合中首先解决"
+      },
+      "lightning_reflexes_diamond": {
+        "name": "闪电反应 钻石",
+        "description": "在250回合中首先解决"
+      },
+      "flawless_victory": {
+        "name": "完美胜利",
+        "description": "以10-0获胜（对手拿到全部20张牌）"
+      },
+      "veteran_bronze": {
+        "name": "老兵 铜牌",
+        "description": "进行10场游戏"
+      },
+      "veteran_silver": {
+        "name": "老兵 银牌",
+        "description": "进行50场游戏"
+      },
+      "veteran_gold": {
+        "name": "老兵 金牌",
+        "description": "进行100场游戏"
+      },
+      "veteran_platinum": {
+        "name": "老兵 白金",
+        "description": "进行500场游戏"
+      },
+      "veteran_diamond": {
+        "name": "老兵 钻石",
+        "description": "进行1000场游戏"
+      },
+      "champion_bronze": {
+        "name": "冠军 铜牌",
+        "description": "赢得10场游戏"
+      },
+      "champion_silver": {
+        "name": "冠军 银牌",
+        "description": "赢得50场游戏"
+      },
+      "champion_gold": {
+        "name": "冠军 金牌",
+        "description": "赢得100场游戏"
+      },
+      "champion_platinum": {
+        "name": "冠军 白金",
+        "description": "赢得500场游戏"
+      },
+      "champion_diamond": {
+        "name": "冠军 钻石",
+        "description": "赢得1000场游戏"
+      },
+      "unstoppable_bronze": {
+        "name": "势不可挡 铜牌",
+        "description": "连续赢得3场游戏"
+      },
+      "unstoppable_silver": {
+        "name": "势不可挡 银牌",
+        "description": "连续赢得5场游戏"
+      },
+      "unstoppable_gold": {
+        "name": "势不可挡 金牌",
+        "description": "连续赢得10场游戏"
+      },
+      "unstoppable_platinum": {
+        "name": "势不可挡 白金",
+        "description": "连续赢得15场游戏"
+      },
+      "unstoppable_diamond": {
+        "name": "势不可挡 钻石",
+        "description": "连续赢得20场游戏"
+      },
+      "daily_devotion_bronze": {
+        "name": "每日奉献 铜牌",
+        "description": "连续7天游戏"
+      },
+      "daily_devotion_silver": {
+        "name": "每日奉献 银牌",
+        "description": "连续30天游戏"
+      },
+      "daily_devotion_gold": {
+        "name": "每日奉献 金牌",
+        "description": "连续100天游戏"
+      },
+      "daily_devotion_platinum": {
+        "name": "每日奉献 白金",
+        "description": "连续365天游戏"
+      },
+      "weekend_warrior": {
+        "name": "周末战士",
+        "description": "在周末进行50场游戏"
+      },
+      "classic_master": {
+        "name": "经典大师",
+        "description": "在经典模式中赢得100场游戏"
+      },
+      "super_mode_champion": {
+        "name": "超级模式冠军",
+        "description": "在超级模式（8张牌）中赢得50场游戏"
+      },
+      "extended_range_expert": {
+        "name": "扩展范围专家",
+        "description": "在扩展范围模式中赢得50场游戏"
+      },
+      "solo_practice_guru": {
+        "name": "单人练习大师",
+        "description": "完成500个单人练习谜题"
+      },
+      "mode_explorer": {
+        "name": "模式探索者",
+        "description": "在每个游戏模式中至少赢得一次"
+      },
+      "friendly_rival": {
+        "name": "友好对手",
+        "description": "与同一对手进行50场游戏"
+      },
+      "spectator_sport": {
+        "name": "观战运动",
+        "description": "作为观众观看100场游戏"
+      },
+      "record_breaker_bronze": {
+        "name": "破纪录者 铜牌",
+        "description": "保持1个谜题记录"
+      },
+      "record_breaker_silver": {
+        "name": "破纪录者 银牌",
+        "description": "保持10个谜题记录"
+      },
+      "record_breaker_gold": {
+        "name": "破纪录者 金牌",
+        "description": "保持50个谜题记录"
+      },
+      "record_breaker_platinum": {
+        "name": "破纪录者 白金",
+        "description": "保持100个谜题记录"
+      },
+      "comeback_king": {
+        "name": "逆转之王",
+        "description": "在0-5落后后获胜"
+      },
+      "underdog": {
+        "name": "以弱胜强",
+        "description": "击败比你多玩500场游戏的对手"
+      },
+      "night_owl": {
+        "name": "夜猫子",
+        "description": "在午夜至早上6点之间进行50场游戏"
+      },
+      "early_bird": {
+        "name": "早起鸟",
+        "description": "在早上5点至8点之间进行50场游戏"
+      },
+      "marathon_runner": {
+        "name": "马拉松跑者",
+        "description": "连续游戏3小时以上"
+      },
+      "quick_thinker": {
+        "name": "快速思考者",
+        "description": "在1秒内解决10个谜题"
+      },
+      "mathematical_genius": {
+        "name": "数学天才",
+        "description": "在一个解决方案中使用所有4种运算（+、-、×、÷）"
+      },
+      "minimalist": {
+        "name": "极简主义者",
+        "description": "仅使用加法和减法赢得一场游戏"
+      },
+      "international_player": {
+        "name": "国际玩家",
+        "description": "用英文和中文进行游戏"
+      },
+      "launch_week_pioneer": {
+        "name": "发布周先锋",
+        "description": "在发布第一周内游戏"
+      },
+      "beta_tester": {
+        "name": "测试员",
+        "description": "参与测试新功能"
+      }
     }
   },
   "lobby": {
@@ -41,6 +322,9 @@
     "createRoom": "创建新房间",
     "joinRoom": "加入房间",
     "joinBattle": "加入对战",
+    "rankedPlay": "排位对战",
+    "rankedPlayDesc": "参加排位赛",
+    "findMatch": "寻找对手",
     "spectate": "👁️ 观战",
     "soloPractice": "单人练习",
     "placeholders": {
@@ -99,6 +383,11 @@
     "room": "房间：{{code}}",
     "round": "第 {{number}} 回合",
     "spectating": "👁️ 观战中",
+    "winConditions": {
+      "classic": "率先获得4分获胜",
+      "extended": "率先获得4分获胜",
+      "super": "率先获得4分获胜"
+    },
     "status": {
       "loading": "加载游戏中...",
       "waitingForData": "等待游戏数据...",
@@ -127,7 +416,10 @@
       "appeared": "出现过 {{count}} 次",
       "record": "记录：{{username}} 用时 {{time}} 秒",
       "newRecord": "新纪录！",
-      "firstTime": "首次出现的题目！你将创造新纪录！"
+      "firstTime": "首次出现的题目！你将创造新纪录！",
+      "beatRecord": "{{playerName}} 快了 {{difference}} 秒！",
+      "noRecordYet": "暂无记录",
+      "yourTime": "{{playerName}} 用时 {{time}} 秒"
     }
   },
   "gameReport": {
@@ -194,7 +486,32 @@
       "cardsGoTo": "牌归属于：",
       "nextRound": "下一回合将在5秒后开始..."
     },
-    "continueNow": "立即继续"
+    "continueNow": "立即继续",
+    "firstSolve": "{{winner}} 首次解出，用时 {{time}} 秒！"
+  },
+  "ranked": {
+    "title": "匹配对战",
+    "rankedMode": "排位赛",
+    "casualMode": "休闲赛",
+    "authRequired": "登录后可参加排位赛并追踪您的段位",
+    "signIn": "登录",
+    "selectGameMode": "选择游戏模式",
+    "joinRankedQueue": "寻找排位对手",
+    "joinCasualQueue": "寻找休闲对手",
+    "leaveQueue": "退出队列",
+    "queueTime": "排队时间",
+    "searchRange": "搜索范围",
+    "estimatedWait": "预计等待",
+    "estimatedSeconds": "约{{seconds}}秒",
+    "calculating": "计算中...",
+    "placementMatches": "还有{{count}}场定级赛",
+    "recentMatches": "最近对局",
+    "win": "胜利",
+    "loss": "失败",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前"
   },
   "gameOver": {
     "spectator": {
@@ -264,8 +581,6 @@
     "or": "或",
     "continueWithGoogle": "使用 Google 继续",
     "continueAsGuest": "游客身份继续",
-    "signIn": "登录",
-    "signUp": "注册",
     "email": "邮箱",
     "emailPlaceholder": "请输入您的邮箱",
     "password": "密码",
@@ -330,16 +645,86 @@
   },
   "leaderboard": {
     "recordHoldings": "记录保持者",
-    "eloRank": "Elo排名（即将推出）",
+    "badges": "徽章排名",
+    "eloRank": "Elo排名",
     "totalPuzzles": "总题目数：{{count}}",
     "noRecordsYet": "还没有记录。成为第一个创造记录的人！",
+    "noBadgesYet": "还没有获得徽章。开始游戏解锁徽章！",
+    "badgeLeaderboard": "按徽章积分排名的顶级玩家",
     "you": "你",
     "records": "个记录",
+    "badgesEarned": "个徽章",
+    "points": "积分",
+    "sortBy": "排序方式",
+    "sortByPoints": "总积分",
+    "sortByCount": "徽章数量",
+    "sortByLegendary": "传奇徽章",
+    "sortByEpic": "史诗徽章",
+    "sortByRare": "稀有徽章",
     "loading": "加载中...",
     "comingSoon": "即将推出",
-    "eloDescription": "Elo排名系统将跟踪您的竞技表现"
+    "eloDescription": "Elo排名系统将跟踪您的竞技表现",
+    "rankedLeaderboard": "排位排行榜",
+    "region": "地区",
+    "global": "全球",
+    "northAmerica": "北美",
+    "europe": "欧洲",
+    "asia": "亚洲",
+    "noRankedPlayers": "暂无排位玩家",
+    "rating": "段位分",
+    "peak": "巅峰",
+    "games": "场次",
+    "winRate": "胜率",
+    "loadMore": "加载更多",
+    "connectionError": "无法连接到排名服务器",
+    "databaseError": "数据库表未配置。请运行数据库迁移。",
+    "databaseHint": "请联系管理员设置ELO排名系统。",
+    "retry": "重试"
   },
   "patchNotes": {
     "title": "更新日志"
+  },
+  "profile": {
+    "notLoggedIn": "请登录以查看您的个人资料",
+    "memberSince": "注册于 {{date}}",
+    "statistics": "统计数据",
+    "gamesPlayed": "游戏场数",
+    "gamesWon": "获胜场数",
+    "winRate": "胜率",
+    "avgSolveTime": "平均解题时间",
+    "fastestSolve": "最快解题",
+    "longestStreak": "最长连胜",
+    "recentGames": "最近游戏",
+    "noRecentGames": "暂无最近游戏记录",
+    "tabs": {
+      "overview": "概览",
+      "ranked": "排位",
+      "badges": "徽章"
+    },
+    "placementMatches": "还有{{count}}场定级赛",
+    "matchHistory": "对战记录",
+    "win": "胜利",
+    "loss": "失败",
+    "noMatchHistory": "暂无排位对战记录",
+    "noRankedStats": "参加排位赛查看您的统计数据"
+  },
+  "badges": {
+    "featuredBadges": "精选徽章",
+    "edit": "编辑",
+    "level": "等级",
+    "totalPoints": "总积分",
+    "totalBadges": "徽章总数",
+    "noFeaturedBadges": "未选择精选徽章",
+    "selectBadges": "选择徽章",
+    "selectFeaturedBadges": "选择精选徽章",
+    "selectUpTo": "最多可选择 {{count}} 个徽章展示在您的个人资料上",
+    "points": "积分",
+    "tier": "等级",
+    "rarity": {
+      "common": "普通",
+      "rare": "稀有",
+      "epic": "史诗",
+      "legendary": "传奇"
+    }
   }
 }
