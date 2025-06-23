@@ -2,21 +2,21 @@ import React from 'react';
 import { GameReport } from './GameReport';
 import type { GameReport as GameReportType } from '../../types/game.types';
 
-// Sample game report data for testing
-const sampleGameReport: GameReportType = {
-  id: 'demo_report_123',
-  gameId: 'demo_game_456',
+// 示例游戏报告数据
+const sampleReport: GameReportType = {
+  id: 'demo-report-123',
+  gameId: 'demo-game-456',
   createdAt: new Date().toISOString(),
   players: [
     {
       id: 'player1',
-      name: 'Alice',
+      name: '玩家1',
       finalScore: 8,
       finalCardCount: 12
     },
     {
       id: 'player2', 
-      name: 'Bob',
+      name: '玩家2',
       finalScore: 5,
       finalCardCount: 20
     }
@@ -57,17 +57,10 @@ const sampleGameReport: GameReportType = {
 
 export const GameReportDemo: React.FC = () => {
   return (
-    <div>
-      <div style={{ 
-        padding: '20px', 
-        backgroundColor: '#f0f0f0', 
-        marginBottom: '20px',
-        textAlign: 'center'
-      }}>
-        <h2>Game Report Demo</h2>
-        <p>This is a demonstration of the game report sharing functionality.</p>
-      </div>
-      <GameReport reportData={sampleGameReport} />
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <h1>游戏报告分享功能测试</h1>
+      <p>这是一个示例游戏报告，用于测试分享功能的显示效果。</p>
+      <GameReport reportData={sampleReport} />
     </div>
   );
 }; 

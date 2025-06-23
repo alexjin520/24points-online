@@ -86,7 +86,14 @@
       "leaveRoom": "Leave Room"
     },
     "gameStarting": "Game starting in {{seconds}}...",
-    "shareCode": "Share this room code with your friend:"
+    "shareCode": "Share this room code with your friend:",
+    "share": {
+      "button": "Share Invite Link",
+      "title": "Join my 24 Points game!",
+      "text": "Click the link to join my room",
+      "copied": "Room invite link copied!",
+      "manual": "Copy this room invite link:"
+    }
   },
   "gameScreen": {
     "room": "Room: {{code}}",

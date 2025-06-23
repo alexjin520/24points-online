@@ -88,6 +88,42 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
     onLeaveRoom();
   };
 
+  const shareRoomInvite = async () => {
+    const roomInviteUrl = `${window.location.origin}/room/${room.id}`;
+    
+    // Try Web Share API first (for mobile devices)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('waitingRoom.share.title', 'Join my 24 Points game!'),
+          text: t('waitingRoom.share.text', 'Click the link to join my room'),
+          url: roomInviteUrl
+        });
+        return;
+      } catch (error) {
+        // User cancelled or share failed, fall back to clipboard
+      }
+    }
+    
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(roomInviteUrl);
+      // Show a temporary notification
+      const notification = document.createElement('div');
+      notification.textContent = t('waitingRoom.share.copied', 'Room invite link copied!');
+      notification.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px;
+        z-index: 10000; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => document.body.removeChild(notification), 2000);
+    } catch (error) {
+      // Final fallback - show the URL in a prompt
+      prompt(t('waitingRoom.share.manual', 'Copy this room invite link:'), roomInviteUrl);
+    }
+  };
+
   return (
     <div className="waiting-room">
       <h2 className="waiting-room-title">
@@ -157,6 +193,9 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
         <div className="waiting-message">
           <p>{t('waitingRoom.shareCode')}</p>
           <div className="room-code-display">{room.id}</div>
+          <button className="share-room-btn" onClick={shareRoomInvite}>
+            🔗 {t('waitingRoom.share.button', 'Share Invite Link')}
+          </button>
         </div>
       )}
     </div>

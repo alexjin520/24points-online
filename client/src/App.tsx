@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import socketService from './services/socketService'
 import { authService, type AuthUser } from './services/authService'
+import { guestService } from './services/guestService'
 import { Lobby } from './components/Lobby/Lobby'
 import { WaitingRoom } from './components/WaitingRoom/WaitingRoom'
 import { GameScreen } from './components/GameScreen/GameScreen'
@@ -62,6 +63,10 @@ function AppContent() {
   // Check if we're on a report page
   const isReportPage = location.pathname.startsWith('/report/')
   const isZhReportPage = location.pathname.startsWith('/zh/report/')
+  
+  // Check if we're on a room invite page
+  const isRoomInvitePage = location.pathname.startsWith('/room/')
+  const isZhRoomInvitePage = location.pathname.startsWith('/zh/room/')
 
   const handleRoomJoined = useCallback((room: GameRoom, playerId: string, isReconnection: boolean = false, isSpectatorJoin: boolean = false) => {
     console.log('[App] handleRoomJoined called:', { roomId: room.id, playerId, isReconnection, isSpectatorJoin })
@@ -93,6 +98,17 @@ function AppContent() {
     if (isReportPage || isZhReportPage) {
       return
     }
+    
+    // Handle room invite links
+    if (isRoomInvitePage || isZhRoomInvitePage) {
+      const pathSegments = location.pathname.split('/')
+      const roomId = pathSegments[pathSegments.length - 1]
+      
+      if (roomId && roomId !== 'room') {
+        // Store the room ID we want to join
+        sessionStorage.setItem('inviteRoomId', roomId)
+      }
+    }
 
     console.log('[App] useEffect mounting, connecting to socket...')
     
@@ -110,7 +126,43 @@ function AppContent() {
     
     const handleConnect = () => {
       setIsConnected(true)
-      setAppState(AppState.LOBBY)
+      
+      // Check if we have a room invitation
+      const inviteRoomId = sessionStorage.getItem('inviteRoomId')
+      if (inviteRoomId) {
+        console.log('[App] Attempting to join invited room:', inviteRoomId)
+        
+        // Set a timeout to prevent infinite waiting
+        const joinTimeout = setTimeout(() => {
+          console.warn('[App] Join room timeout')
+          setAppState(AppState.LOBBY)
+          sessionStorage.removeItem('inviteRoomId')
+          alert('加入房间超时，请检查网络连接或房间是否有效。')
+        }, 10000) // 10 seconds timeout
+        
+        // Try to join the invited room
+        // Use existing guest username or generate a new one
+        let playerName = guestService.getGuestUsername()
+        if (!playerName) {
+          playerName = `Guest_${Math.random().toString(36).substring(2, 8)}`
+          guestService.setGuestUsername(playerName)
+        }
+        
+        // Listen for join-room-error event
+        const handleJoinError = (data: { message: string }) => {
+          clearTimeout(joinTimeout)
+          setAppState(AppState.LOBBY)
+          sessionStorage.removeItem('inviteRoomId')
+          console.warn('Could not join invited room:', data.message)
+          alert('无法加入房间：' + data.message)
+          socketService.off('join-room-error', handleJoinError)
+        }
+        
+        socketService.on('join-room-error', handleJoinError)
+        socketService.emit('join-room', { roomId: inviteRoomId, playerName })
+      } else {
+        setAppState(AppState.LOBBY)
+      }
       
       // Get initial online users count
       socketService.emit('get-online-users', (data: { count: number }) => {
@@ -166,9 +218,17 @@ function AppContent() {
       }
     }
 
+    const handleRoomJoinedEvent = (data: { room: GameRoom; playerId: string }) => {
+      console.log('[App] room-joined event received:', data)
+      // Clear any pending invite room ID
+      sessionStorage.removeItem('inviteRoomId')
+      handleRoomJoined(data.room, data.playerId, false, false)
+    }
+
     // Setup event listeners
     socketService.on('connect', handleConnect)
     socketService.on('disconnect', handleDisconnect)
+    socketService.on('room-joined', handleRoomJoinedEvent)
     socketService.on('spectator-joined', handleSpectatorJoined)
     socketService.on('game-state-updated', handleGameStateUpdated)
 
@@ -176,6 +236,7 @@ function AppContent() {
       // Clean up event listeners
       socketService.off('connect', handleConnect)
       socketService.off('disconnect', handleDisconnect)
+      socketService.off('room-joined', handleRoomJoinedEvent)
       socketService.off('spectator-joined', handleSpectatorJoined)
       socketService.off('game-state-updated', handleGameStateUpdated)
       
@@ -185,7 +246,7 @@ function AppContent() {
         console.log('App unmounting but keeping socket connected for potential re-mount')
       }
     }
-  }, [handleRoomJoined, isReportPage, isZhReportPage])
+  }, [handleRoomJoined, isReportPage, isZhReportPage, isRoomInvitePage, isZhRoomInvitePage, location.pathname])
 
   // Poll for online users updates
   useEffect(() => {
@@ -321,6 +382,9 @@ function AppContent() {
                   <button onClick={() => setTestComponent('interactive')}>
                     {t('app.testMenu.interactiveTable')}
                   </button>
+                  <button onClick={() => window.open('/report/demo-report-123', '_blank')}>
+                    测试游戏报告分享
+                  </button>
                 </div>
               </div>
             )}
@@ -368,6 +432,8 @@ function App() {
       <Routes>
         <Route path="/report/:reportId" element={<AppContent />} />
         <Route path="/zh/report/:reportId" element={<AppContent />} />
+        <Route path="/room/:roomId" element={<AppContent />} />
+        <Route path="/zh/room/:roomId" element={<AppContent />} />
         <Route path="/*" element={<AppContent />} />
       </Routes>
     </Router>

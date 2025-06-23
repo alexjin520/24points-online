@@ -86,7 +86,14 @@
       "leaveRoom": "离开房间"
     },
     "gameStarting": "游戏将在 {{seconds}} 秒后开始...",
-    "shareCode": "与您的朋友分享此房间代码："
+    "shareCode": "与您的朋友分享此房间代码：",
+    "share": {
+      "button": "分享邀请链接",
+      "title": "加入我的24点游戏！",
+      "text": "点击链接加入我的房间",
+      "copied": "房间邀请链接已复制！",
+      "manual": "复制此房间邀请链接："
+    }
   },
   "gameScreen": {
     "room": "房间：{{code}}",
